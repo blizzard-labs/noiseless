@@ -15,4 +15,21 @@ describe('model routing and contracts',()=>{
   it('reserves budget before requests and preserves reservations on ambiguous failures',async()=>{const c=setup();c.providers.lmstudio.enabled=false;c.providers.anthropic.enabled=false;c.monthlyCloudBudget=.02;const ledger=new MemoryLedger();let calls=0;const r=new ModelRouter(async()=>c,()=> 'secret',async()=>{calls++;expect((await ledger.all()).at(-1)?.status).toBe('reserved');throw new Error('timeout');},ledger,async()=>{});await expect(r.enrich(task(),graph)).rejects.toThrow();expect(calls).toBeLessThanOrEqual(2);expect(ledger.rows.reduce((n,r)=>n+r.cost,0)).toBeGreaterThan(0);});
   it('invalidates cache for meaningful task, graph and rubric changes',()=>{const t=task(),key=enrichmentKey(t,graph,config);t.title+=' edited';expect(enrichmentKey(t,graph,config)).not.toBe(key);expect(enrichmentKey(task(),{...graph,version:2},config)).not.toBe(key);expect(enrichmentKey(task(),graph,{...config,rubricVersion:2})).not.toBe(key);});
   it('validates the graph proposal before returning it',async()=>{const c=setup();const r=new ModelRouter(async()=>c,()=> 'secret',async()=>respond('anthropic',graph),new MemoryLedger(),async()=>{});expect((await r.draft('My goals',graph)).goals).toHaveLength(5);});
+  it('never sends analysis to unchecked cloud connections',async()=>{
+    const c=setup();for(const p of [c.providers.openai,c.providers.anthropic])p.tasks={enrichment:false,goalDraft:true};
+    const requests:Request[]=[];const r=new ModelRouter(async()=>c,()=> 'secret',async req=>{requests.push(req);return respond('local');},new MemoryLedger(),async()=>{});
+    expect((await r.enrich(task(),graph)).provider).toBe('lmstudio');expect(requests).toHaveLength(1);expect(requests[0].url).toContain('1234');
+  });
+  it('supports cloud-only analysis and local-only goal drafting',async()=>{
+    const c=setup();c.providers.lmstudio.tasks={enrichment:false,goalDraft:true};for(const p of [c.providers.openai,c.providers.anthropic])p.tasks={enrichment:true,goalDraft:false};
+    const requests:Request[]=[];const r=new ModelRouter(async()=>c,()=> 'secret',async req=>{requests.push(req);return req.url.includes('1234')?respond('local',graph):respond('openai');},new MemoryLedger(),async()=>{});
+    expect((await r.enrich(task(),graph)).provider).toBe('openai');expect(requests).toHaveLength(1);
+    await r.draft('My brief',graph);expect(requests).toHaveLength(2);expect(requests[1].url).toContain('1234');
+  });
+  it('makes no requests when every connection has the operation unchecked',async()=>{
+    const c=setup();for(const p of Object.values(c.providers))p.tasks={enrichment:false,goalDraft:false};let calls=0;
+    const r=new ModelRouter(async()=>c,()=> 'secret',async()=>{calls++;return respond('local');},new MemoryLedger(),async()=>{});
+    await expect(r.enrich(task(),graph)).rejects.toThrow('unchecked');await expect(r.draft('brief',graph)).rejects.toThrow('unchecked');expect(calls).toBe(0);
+  });
+
 });

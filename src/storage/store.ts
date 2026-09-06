@@ -9,7 +9,9 @@ export const paths={everything:`${ROOT}/Everything.md`,today:`${ROOT}/Today.md`,
 export const emptyGraph:GoalGraph={schema:1,version:1,goals:[]};
 export class Store {
   constructor(readonly io:VaultIO){}
-  async init(){for(const [p,t] of Object.entries(initialNotes()))if(!await this.io.exists(p))await this.io.create(p,t);}
+  async init(){for(const [p,t] of Object.entries(initialNotes()))if(!await this.io.exists(p))await this.io.create(p,t);
+    await this.io.process(paths.draft,text=>withDraftReview(text));
+  }
   async config(){return readNote(await this.io.read(paths.config),configSchema).data;}
   async graph(){const g=readNote(await this.io.read(paths.goals),graphSchema).data;validateGraph(g);return g;}
   async taskFiles(){const files=(await this.io.list()).filter(p=>p.startsWith(`${ROOT}/Tasks/`)&&p.endsWith('.md'));const rows:{path:string;task:Task}[]=[];const ids=new Set<string>();
@@ -42,6 +44,7 @@ export class Store {
     await this.io.process(paths.goals,text=>patchNote(text,graphSchema,()=>next));
   }
 }
+export function withDraftReview(text:string){return /```noiseless\s+draft\s*```/.test(text)?text:text+'\n\n```noiseless\ndraft\n```\n';}
 export function initialNotes():Record<string,string>{
   const view=(title:string,page:string)=>`# ${title}\n\n\`\`\`noiseless\n${page}\n\`\`\`\n`;
   return {
@@ -51,7 +54,7 @@ export function initialNotes():Record<string,string>{
     [paths.goals]:writeNote(emptyGraph,view('Your goals','goals')),
     [paths.draft]:writeNote(emptyGraph,'\n# Goal draft\n\nReview goal descriptions, success criteria, dates, and parent weights in Properties (Source mode). Then run **Noiseless: Approve goal draft**. Each child’s parent weights total 1.\n'),
     [paths.brief]:'# What matters to you?\n\nDescribe your life missions, milestones, checkpoints, and what success looks like. Include dates where you know them. Replace this paragraph with your own goals, then run **Noiseless: Draft goals from brief**.\n',
-    [paths.config]:writeNote(defaultConfig,'\n# Make room for what matters\n\n```noiseless\nsetup\n```\n\n## One-time setup\n\nIn Source mode, edit the properties above:\n\n1. Set weekdayMinutes and weekendMinutes (focused work, not your entire workday).\n2. Start the local server in LM Studio → Developer. Put its loaded model identifier under providers.lmstudio.model.\n3. Optionally enable OpenAI and Anthropic, set their model IDs and current USD input/output rates per million tokens, and choose a monthlyCloudBudget. Cloud stays paused until a positive budget and rates are configured.\n4. Store API keys in Obsidian Settings → Noiseless. Only credential names belong here.\n5. Describe goals in [[Noiseless/Goal brief]], draft them, then review [[Noiseless/Goal draft]] before approval.\n\n## Priority weights\n\nWeights are relative and editable. An all-zero set is invalid. Bump rubricVersion if you change your scoring interpretation. Daily overrides use YYYY-MM-DD keys.\n\n## Scoring anchors\n\nImpact: 1 = minor maintenance; 5 = meaningful checkpoint deliverable; 10 = major measurable outcome.\nMission fit: 1 = little causal connection; 5 = useful indirect support; 10 = direct, substantial mission contribution.\nReputation: 1 = private or negligible external effect; 5 = strengthens a meaningful relationship; 10 = major durable trust or visibility.\n\nChange task values in its overrides properties to preserve them across enrichment. A due override should include dateKind: explicit.\n'),
+    [paths.config]:writeNote(defaultConfig,'\n# Make room for what matters\n\n```noiseless\nsetup\n```\n\n## One-time setup\n\nIn Source mode, edit the properties above:\n\n1. Set weekdayMinutes and weekendMinutes (focused work, not your entire workday).\n2. Start the local server in LM Studio → Developer. Use the LM Studio connection panel in Reading view to save its loaded model identifier and server URL.\n3. Optionally enable OpenAI and Anthropic, set their model IDs and current USD input/output rates per million tokens, and choose a monthlyCloudBudget. Cloud stays paused until a positive budget and rates are configured.\n4. Store API keys in Obsidian Settings → Noiseless. Only credential names belong here.\n5. Describe goals in [[Noiseless/Goal brief]], draft them, then review [[Noiseless/Goal draft]] before approval.\n\n## Priority weights\n\nWeights are relative and editable. An all-zero set is invalid. Bump rubricVersion if you change your scoring interpretation. Daily overrides use YYYY-MM-DD keys.\n\n## Scoring anchors\n\nImpact: 1 = minor maintenance; 5 = meaningful checkpoint deliverable; 10 = major measurable outcome.\nMission fit: 1 = little causal connection; 5 = useful indirect support; 10 = direct, substantial mission contribution.\nReputation: 1 = private or negligible external effect; 5 = strengthens a meaningful relationship; 10 = major durable trust or visibility.\n\nChange task values in its overrides properties to preserve them across enrichment. A due override should include dateKind: explicit.\n'),
     [paths.diagnostics]:'# Diagnostics\n\nProvider activity and recoverable errors appear here. No API keys or request bodies are recorded.\n'
   };
 }

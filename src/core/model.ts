@@ -50,7 +50,8 @@ export type CompletionEvent = z.infer<typeof completionSchema>;
 export type Snapshot = z.infer<typeof snapshotSchema>;
 export const providerSchema = z.object({
   enabled:z.boolean(), baseUrl:z.string().url(), model:z.string(), credential:z.string(),
-  inputPerMillion:z.number().nonnegative(), outputPerMillion:z.number().nonnegative()
+  inputPerMillion:z.number().nonnegative(), outputPerMillion:z.number().nonnegative(),
+  tasks:z.object({enrichment:z.boolean(),goalDraft:z.boolean()}).optional()
 });
 export const configSchema = z.object({
   schema:z.literal(1), rubricVersion:z.number().int().positive(),

@@ -1,0 +1,832 @@
+{
+  "schema": 1,
+  "version": 2,
+  "goals": [
+    {
+      "id": "agency-2066",
+      "title": "Build an enduring global institution expanding human agency",
+      "level": "L1",
+      "description": "Establish and lead a self-sustaining commercial and philanthropic institution that expands independence for people affected by neurological or psychiatric conditions, infectious disease, poverty, and conflict. Build the economic engine through 2051 and deploy systemic solutions through 2066, with overlap between phases. Use agency gained, its magnitude, durability, and equitable access as the primary outcome. The repeated $200 billion ambition governs the proposal; the isolated $100 billion reference is treated as an inconsistency. All dollar targets are proposed in constant 2026 dollars. Exact calendar days were not supplied, so every date is inferred; near-term dates are planning checkpoints, not verified external deadlines. Importance represents anchored impact only; no urgency, ROI, priority, mission-fit, or reputation scores are added because the schema provides no separate fields.",
+      "successCriteria": "By 2066, independently substantiate durable agency gains for at least 1 billion distinct people and at least $200 billion cumulatively mobilized and distributed, reporting mobilization and deployment separately without adding them together. Document durable portfolio outcomes in all four motivating domains, equitable access, a sustainable funding engine, independent governance, and functioning leadership succession.",
+      "due": "2066-12-31",
+      "dateKind": "inferred",
+      "importance": 10,
+      "parents": [],
+      "achieved": false
+    },
+    {
+      "id": "personal-foundation",
+      "title": "Sustain health, family relationships, and a broad life foundation",
+      "level": "L1",
+      "description": "Build a sustainable personal foundation alongside education and institution building, including bodybuilding-style strength training, running, family time, and diverse experiences. Proposed process targets should be reviewed against the actual school schedule and personal baseline.",
+      "successCriteria": "Maintain documented strength and running progress, recurring meaningful family time, and diverse experiences through annual reviews to 2031; adjust commitments when they undermine recovery, relationships, or academic responsibilities.",
+      "due": "2031-12-31",
+      "dateKind": "inferred",
+      "importance": 7,
+      "parents": [],
+      "achieved": false
+    },
+    {
+      "id": "capability-2031",
+      "title": "Develop exceptional capability and select a scalable technical wedge",
+      "level": "L2",
+      "description": "Develop depth in computational neuroscience and AI with supporting mathematics, engineering, clinical science, entrepreneurship, economics, and leadership. Ground problem selection in patients and resource-constrained communities.",
+      "successCriteria": "Produce multiple serious research contributions, including at least one assessed by independent domain experts as meaningfully advancing its field; deploy technologies to at least 1,000 real users or beneficiaries; experience frontier research and low-resource healthcare; build 50–100 substantive professional relationships; and select a technically defensible, commercially scalable wedge that expands agency.",
+      "due": "2031-12-31",
+      "dateKind": "inferred",
+      "importance": 8,
+      "parents": [
+        {
+          "parentId": "agency-2066",
+          "weight": 1
+        }
+      ],
+      "achieved": false
+    },
+    {
+      "id": "college-2027",
+      "title": "Secure and choose an undergraduate environment supporting the mission",
+      "level": "L2",
+      "description": "Pursue admission to strong undergraduate programs, with Stanford, MIT, and Columbia as stated aspirations, while evaluating mentorship, research access, affordability, and opportunities for practical impact. Admission is an external outcome rather than a guaranteed result.",
+      "successCriteria": "Submit the intended eligible application portfolio on verified deadlines; maintain the academic record; compare all available offers for fit and affordability; and accept an attainable option offering strong foundations for the 2031 capability goals. Record outcomes at the proposed checkpoint even if preferred admissions do not occur.",
+      "due": "2027-05-31",
+      "dateKind": "inferred",
+      "importance": 7,
+      "parents": [
+        {
+          "parentId": "agency-2066",
+          "weight": 1
+        }
+      ],
+      "achieved": false
+    },
+    {
+      "id": "venture-2036",
+      "title": "Establish an independently effective technology venture",
+      "level": "L2",
+      "description": "Become a founder or principal leader of an organization solving a narrow independence problem in neurological health, rehabilitation, neurotechnology, AI-enabled medicine, or an adjacent validated domain.",
+      "successCriteria": "Independently validate functional improvements for at least 100,000 distinct people and a credible route to millions; demonstrate a sustainable commercial model; report approximately $50–250 million in cumulative capital raised or revenue separately; employ roughly 50–200 people; establish institutional partnerships and access across socioeconomic settings; and show continued delivery under delegated operations.",
+      "due": "2036-12-31",
+      "dateKind": "inferred",
+      "importance": 9,
+      "parents": [
+        {
+          "parentId": "agency-2066",
+          "weight": 1
+        }
+      ],
+      "achieved": false
+    },
+    {
+      "id": "platform-2041",
+      "title": "Scale an international economic and technology platform",
+      "level": "L2",
+      "description": "Expand the initial intervention into an evidence-based platform operating internationally, with strong executive leadership and a research or philanthropic arm supported by the commercial engine.",
+      "successCriteria": "Demonstrate agency gains for approximately 1–10 million distinct people across multiple countries; reach at least $1 billion in enterprise value, capital resources, or clearly defined equivalent capacity without adding unlike measures; generate hundreds of millions in annual economic activity or an evidenced durable capital stream; maintain affordable access; and delegate daily operations to a capable executive team.",
+      "due": "2041-12-31",
+      "dateKind": "inferred",
+      "importance": 9,
+      "parents": [
+        {
+          "parentId": "agency-2066",
+          "weight": 1
+        }
+      ],
+      "achieved": false
+    },
+    {
+      "id": "institution-2046",
+      "title": "Build a multi-billion-dollar scientific and humanitarian institution",
+      "level": "L2",
+      "description": "Develop a commercial, scientific, and philanthropic institution spanning neurological and psychiatric disease, disability, AI-enabled healthcare, and global health.",
+      "successCriteria": "Independently document improved independence for at least 25 million distinct people, targeting 20 or more countries; evidence resources on the order of $10 billion or more with enterprise value, liquid capital, assets, and commitments reported separately and without double counting; support thousands of staff and partners; operate research laboratories or institutes; and finance ambitious work through durable institutional resources.",
+      "due": "2046-12-31",
+      "dateKind": "inferred",
+      "importance": 10,
+      "parents": [
+        {
+          "parentId": "agency-2066",
+          "weight": 1
+        }
+      ],
+      "achieved": false
+    },
+    {
+      "id": "systemic-2051",
+      "title": "Convert a large economic engine into systemic agency programs",
+      "level": "L2",
+      "description": "Pursue the stated trillion-dollar economic-engine ambition while expanding systemic work across human capability, economic agency, and institutional agency. Treat enterprise scale and available philanthropic capital as distinct measures.",
+      "successCriteria": "Assess the $1 trillion economic-engine target using a disclosed, independently reviewed valuation or economic-capacity measure; deploy at least $10 billion cumulatively toward health, economic mobility, and institutional capacity; substantiate agency gains for at least 100 million distinct people; target operations or partnerships in 50 or more countries; and establish expertise in implementation, incentives, financing, policy, logistics, and institution building.",
+      "due": "2051-12-31",
+      "dateKind": "inferred",
+      "importance": 10,
+      "parents": [
+        {
+          "parentId": "agency-2066",
+          "weight": 1
+        }
+      ],
+      "achieved": false
+    },
+    {
+      "id": "systems-2056",
+      "title": "Embed national-scale interventions and sustainable institutional funding",
+      "level": "L2",
+      "description": "Become a credible global systems actor with national-scale programs, durable financing, multinational partnerships, and leadership succession underway.",
+      "successCriteria": "Substantiate improved health, economic agency, or personal security for at least 250 million distinct people; deploy approximately $25–40 billion or more cumulatively; integrate selected interventions into national systems; demonstrate national-scale poverty programs and disease programs capable of eradication-scale operations; participate credibly in conflict prevention or reconstruction; and establish independent financing and delegated leadership.",
+      "due": "2056-12-31",
+      "dateKind": "inferred",
+      "importance": 10,
+      "parents": [
+        {
+          "parentId": "agency-2066",
+          "weight": 1
+        }
+      ],
+      "achieved": false
+    },
+    {
+      "id": "historic-2061",
+      "title": "Demonstrate a civilization-scale outcome and broad durable agency gains",
+      "level": "L2",
+      "description": "Concentrate institutional and coalition capacity on at least one historically material outcome, with the founder acting increasingly as institution designer, scientific strategist, capital allocator, and coalition builder.",
+      "successCriteria": "Independently validate at least one civilization-scale outcome, such as major neurological disability reduction, infectious-disease eradication, mass durable economic mobility, regional healthcare transformation, or material conflict prevention or mitigation; substantiate expanded independence for approximately 500 million distinct people; and separately report roughly $50–75 billion cumulatively mobilized or deployed.",
+      "due": "2061-12-31",
+      "dateKind": "inferred",
+      "importance": 10,
+      "parents": [
+        {
+          "parentId": "agency-2066",
+          "weight": 1
+        }
+      ],
+      "achieved": false
+    },
+    {
+      "id": "legacy-2066",
+      "title": "Institutionalize billion-person impact and founder-independent continuity",
+      "level": "L2",
+      "description": "Complete the final scale and continuity checkpoint with durable achievements across the four original domains, beneficiary participation, and financial and leadership systems that outlast the founder.",
+      "successCriteria": "Audit at least 1 billion distinct beneficiaries with meaningful agency gains and at least $200 billion mobilized and distributed under separate ledgers; publish domain-specific durable outcomes and access measures; demonstrate a sustainable funding model and successful succession; and show major decisions and program delivery proceeding without dependence on the founder.",
+      "due": "2066-12-31",
+      "dateKind": "inferred",
+      "importance": 10,
+      "parents": [
+        {
+          "parentId": "agency-2066",
+          "weight": 1
+        }
+      ],
+      "achieved": false
+    },
+    {
+      "id": "health-2031",
+      "title": "Build sustainable strength and running habits",
+      "level": "L2",
+      "description": "Develop strength and muscular fitness alongside an improving 5K performance, using a measured starting baseline and sustainable routines rather than invented physique or race targets.",
+      "successCriteria": "Record starting strength and 5K baselines, adopt personally appropriate measurable improvement targets, review progress at least quarterly, and demonstrate sustained participation and improvement over successive annual reviews through 2031.",
+      "due": "2031-12-31",
+      "dateKind": "inferred",
+      "importance": 6,
+      "parents": [
+        {
+          "parentId": "personal-foundation",
+          "weight": 1
+        }
+      ],
+      "achieved": false
+    },
+    {
+      "id": "relationships-2031",
+      "title": "Maintain family connection and broaden lived experience",
+      "level": "L2",
+      "description": "Protect meaningful time with family and pursue varied social, cultural, service, and practical experiences that develop perspective and empathy.",
+      "successCriteria": "Maintain a recurring family-time commitment and a record of diverse experiences and reflections; review annually whether relationships remain strong and whether experiences are broadening understanding of different lives and circumstances.",
+      "due": "2031-12-31",
+      "dateKind": "inferred",
+      "importance": 7,
+      "parents": [
+        {
+          "parentId": "personal-foundation",
+          "weight": 1
+        }
+      ],
+      "achieved": false
+    },
+    {
+      "id": "application-calendar",
+      "title": "Verify application routes, requirements, and deadlines",
+      "level": "L3",
+      "description": "Create an authoritative application tracker for Stanford, UMich, USC, Georgia Tech, UMD, Purdue, UT Austin, Northeastern, University of Washington, UCLA, UC Berkeley, UC San Diego, UC Santa Barbara, CMU, UPenn, Johns Hopkins, Columbia, Caltech, MIT, Harvard, and Yale. The brief’s REA/EA and RD labels are intentions, not verified policy. Check restrictive early-action compatibility and each school’s actual application route.",
+      "successCriteria": "For every intended school, record the official application plan, deadline and timezone, prompts, recommendations, testing and aid requirements, and source URL; identify and resolve early-plan conflicts before any submission. Replace inferred planning checkpoints where official deadlines require earlier action.",
+      "due": "2026-09-20",
+      "dateKind": "inferred",
+      "importance": 5,
+      "parents": [
+        {
+          "parentId": "college-2027",
+          "weight": 1
+        }
+      ],
+      "achieved": false
+    },
+    {
+      "id": "common-app-essay",
+      "title": "Complete a reflective, polished Common Application essay",
+      "level": "L3",
+      "description": "Develop the personal statement from genuine experiences through structured reflection, several drafts, and feedback while retaining the applicant’s voice.",
+      "successCriteria": "Complete an experience inventory, compare at least three narrative directions, produce and revise a full draft with trusted feedback, and finish a truthful, proofread essay within the platform limit and ready before the earliest applicable verified deadline.",
+      "due": "2026-10-15",
+      "dateKind": "inferred",
+      "importance": 5,
+      "parents": [
+        {
+          "parentId": "college-2027",
+          "weight": 1
+        }
+      ],
+      "achieved": false
+    },
+    {
+      "id": "early-applications",
+      "title": "Submit the verified fall application portfolio",
+      "level": "L3",
+      "description": "Complete school-specific essays, activities descriptions, recommendations, transcripts, required materials, and submissions for the intended fall schools whose verified plans are compatible. This date is a completion checkpoint, not a common application deadline.",
+      "successCriteria": "Submit each selected eligible fall application before its individual verified deadline; confirm required recommendations and school documents are received or tracked; save confirmations and check portals for missing materials. Include UC and other distinct application systems on their actual schedules.",
+      "due": "2026-11-30",
+      "dateKind": "inferred",
+      "importance": 6,
+      "parents": [
+        {
+          "parentId": "college-2027",
+          "weight": 1
+        }
+      ],
+      "achieved": false
+    },
+    {
+      "id": "regular-applications",
+      "title": "Submit the regular-decision application portfolio",
+      "level": "L3",
+      "description": "Prepare the intended CMU, UPenn, Johns Hopkins, Columbia, Caltech, MIT, Harvard, and Yale applications, plus any remaining applications indicated by the verified plan. This is a review checkpoint and must not override earlier official deadlines.",
+      "successCriteria": "Complete polished school-specific materials, submit all selected applications by their verified deadlines, retain confirmations, and resolve portal checklist issues; document any deliberate changes to the proposed school list.",
+      "due": "2027-01-15",
+      "dateKind": "inferred",
+      "importance": 6,
+      "parents": [
+        {
+          "parentId": "college-2027",
+          "weight": 1
+        }
+      ],
+      "achieved": false
+    },
+    {
+      "id": "school-record",
+      "title": "Maintain senior-year academic performance and attendance",
+      "level": "L3",
+      "description": "Maintain As in Multivariable Calculus, Rhetoric, Neuroscience, and Modern Physics and protect the stated 4.0 GPA while reducing avoidable tardies and absences. Final school results follow the college-choice checkpoint.",
+      "successCriteria": "Earn final As in all four named capstones and maintain the stated 4.0 GPA; submit required coursework on time; review attendance monthly and meet a proposed target of zero unexcused absences or tardies, with unavoidable or excused exceptions documented.",
+      "due": "2027-06-15",
+      "dateKind": "inferred",
+      "importance": 6,
+      "parents": [
+        {
+          "parentId": "college-2027",
+          "weight": 1
+        }
+      ],
+      "achieved": false
+    },
+    {
+      "id": "portfolio-deliverables",
+      "title": "Make existing research and engineering contributions reviewable",
+      "level": "L3",
+      "description": "Assemble accurate public or privately reviewable evidence for tractX, balancerator, mesonet, THALis, and the Holmes Lab work. Choose a suitable deliverable for each rather than treating patents or publication as guaranteed or interchangeable evidence of impact.",
+      "successCriteria": "Provide a concise project page or dossier for each project with the problem, individual contribution, methods, results, limitations, current status, and a linked demonstration, manuscript, repository, or documented application; distinguish completed, submitted, planned, and independently validated work without claiming unproven clinical benefit.",
+      "due": "2026-10-25",
+      "dateKind": "inferred",
+      "importance": 6,
+      "parents": [
+        {
+          "parentId": "college-2027",
+          "weight": 0.5
+        },
+        {
+          "parentId": "capability-2031",
+          "weight": 0.5
+        }
+      ],
+      "achieved": false
+    },
+    {
+      "id": "holmes-evolmovess",
+      "title": "Complete and document the Evolmovess evaluation",
+      "level": "L3",
+      "description": "Finish the agreed evaluation of the Holmes Lab phylogenetic MCMC algorithm and provide the mentor with concrete evidence supporting a college recommendation and a potential paper.",
+      "successCriteria": "Agree on scope and evaluation criteria with the supervisor; deliver reproducible benchmarks, analyses, figures, and limitations; obtain supervisor review; draft the relevant manuscript contribution; and request a recommendation with sufficient lead time for the verified application deadline. Record publication and letter decisions separately as external outcomes.",
+      "due": "2026-10-15",
+      "dateKind": "inferred",
+      "importance": 6,
+      "parents": [
+        {
+          "parentId": "college-2027",
+          "weight": 0.4
+        },
+        {
+          "parentId": "capability-2031",
+          "weight": 0.6
+        }
+      ],
+      "achieved": false
+    },
+    {
+      "id": "brain-brew-ride",
+      "title": "Deliver the Brain Brew Ride community and fundraising event",
+      "level": "L3",
+      "description": "Co-organize the proposed two-day San Francisco event raising empathy for neurodegenerative disease and funds for Alzheimer’s Association and Michael J. Fox Foundation. The brief reports YMCA and UCSF hosting partnerships as confirmed and Alzheimer’s Association collaboration as prospective; preserve that distinction. Date is a placeholder pending partner agreement.",
+      "successCriteria": "Agree and document the event dates, roles, host arrangements, participant safety and accessibility plan, fundraising destinations, and program; hold the two-day event; target more than $10,000 in verified funds across the two beneficiaries and at least 500 distinct participants; publish reconciled donations, attendance, participant feedback, and lessons learned, recording actual outcomes even if targets are missed.",
+      "due": "2026-11-15",
+      "dateKind": "inferred",
+      "importance": 7,
+      "parents": [
+        {
+          "parentId": "college-2027",
+          "weight": 0.2
+        },
+        {
+          "parentId": "capability-2031",
+          "weight": 0.8
+        }
+      ],
+      "achieved": false
+    },
+    {
+      "id": "neuroreach-feasibility",
+      "title": "Establish a feasible route to evaluating NeuroReach with users",
+      "level": "L3",
+      "description": "Test whether the existing EEG stroke motor-rehabilitation game can be evaluated through an accessible clinic or community partnership despite the absence of grant-funded compensation. Keep usability evidence distinct from treatment efficacy.",
+      "successCriteria": "Create a concise demo, partner brief, resource requirements, and evaluation proposal; hold at least three substantive partner discussions; and document a feasible supervised evaluation agreement or an evidence-based decision that no suitable route currently exists, with barriers and an alternative nonclinical demonstration documented.",
+      "due": "2026-10-20",
+      "dateKind": "inferred",
+      "importance": 6,
+      "parents": [
+        {
+          "parentId": "college-2027",
+          "weight": 0.2
+        },
+        {
+          "parentId": "capability-2031",
+          "weight": 0.8
+        }
+      ],
+      "achieved": false
+    },
+    {
+      "id": "neuroreach-evaluation",
+      "title": "Complete an appropriate NeuroReach usability evaluation",
+      "level": "L3",
+      "description": "If a feasible partnership is secured, evaluate usability under partner supervision with appropriate consent, privacy protections, and required institutional approvals. If that route is unavailable, use nonclinical testing and make its limits explicit.",
+      "successCriteria": "Complete a partner-approved protocol and proposed initial usability test with at least five consenting participants, or a clearly labeled nonclinical usability study; document recruitment, task completion, feedback, technical failures, and resulting design changes. Do not count usability participation as clinical improvement or imply stroke-rehabilitation efficacy without suitable evidence.",
+      "due": "2027-03-31",
+      "dateKind": "inferred",
+      "importance": 6,
+      "parents": [
+        {
+          "parentId": "capability-2031",
+          "weight": 1
+        }
+      ],
+      "achieved": false
+    },
+    {
+      "id": "thalis-sts",
+      "title": "Complete the THALis expansion and Regeneron STS submission",
+      "level": "L3",
+      "description": "Investigate a topology-informed universal reservoir adapting to patient-specific neural trajectories for proportional control, and prepare an STS entry. Verify official eligibility and deadlines before using the inferred checkpoint.",
+      "successCriteria": "Specify hypotheses and evaluation criteria; implement a reproducible baseline and proposed method; evaluate cross-patient generalization using participant-separated data and leakage controls; report ablations, uncertainty, limitations, and negative results; finish the research report and required application components; and submit by the verified official deadline if eligible.",
+      "due": "2026-11-01",
+      "dateKind": "inferred",
+      "importance": 6,
+      "parents": [
+        {
+          "parentId": "college-2027",
+          "weight": 0.4
+        },
+        {
+          "parentId": "capability-2031",
+          "weight": 0.6
+        }
+      ],
+      "achieved": false
+    },
+    {
+      "id": "thalis-tda-paper",
+      "title": "Advance the submitted THALis topology result through review",
+      "level": "L3",
+      "description": "Track and advance the mathematical result on limits of rescaling in topological data analysis, reported as submitted to Entropy, while preserving accurate submission status.",
+      "successCriteria": "Maintain a complete proof and reproducible supporting material where applicable; obtain an independent technical critique; address editorial or reviewer requests received by the checkpoint; and document the current decision or a justified next submission route without requiring or claiming acceptance.",
+      "due": "2027-03-31",
+      "dateKind": "inferred",
+      "importance": 6,
+      "parents": [
+        {
+          "parentId": "capability-2031",
+          "weight": 1
+        }
+      ],
+      "achieved": false
+    },
+    {
+      "id": "thalis-deliverable",
+      "title": "Release a substantive THALis technical artifact",
+      "level": "L3",
+      "description": "Create a reviewable deliverable for the remaining EEG prosthetic-control work, considering a preprint, demonstration, or provisional patent route where appropriate. Any filing decision should account for authorship, ownership, collaborators, and disclosure timing.",
+      "successCriteria": "Complete a technical manuscript or demonstration describing the system, evidence, contributions, and limitations; agree on dissemination with relevant collaborators; and release a preprint or documented demo, or record a reviewed filing and disclosure plan. Label actual filing and publication statuses accurately.",
+      "due": "2026-10-25",
+      "dateKind": "inferred",
+      "importance": 5,
+      "parents": [
+        {
+          "parentId": "capability-2031",
+          "weight": 1
+        }
+      ],
+      "achieved": false
+    },
+    {
+      "id": "tractx-deliverable",
+      "title": "Produce a tractX tractography deliverable",
+      "level": "L3",
+      "description": "Turn the existing tractography project into a reproducible and understandable portfolio contribution.",
+      "successCriteria": "Complete a methods-and-results report, a reproducible sample workflow or demonstration on appropriately usable data, and an explicit limitations section; obtain at least one technical review and link the artifact in the project portfolio.",
+      "due": "2026-10-25",
+      "dateKind": "inferred",
+      "importance": 5,
+      "parents": [
+        {
+          "parentId": "capability-2031",
+          "weight": 1
+        }
+      ],
+      "achieved": false
+    },
+    {
+      "id": "balancerator-deliverable",
+      "title": "Produce a balancerator engineering deliverable",
+      "level": "L3",
+      "description": "Document the mechanized Parkinson’s-disease balance-suit concept and prototype at the level supported by actual engineering evidence.",
+      "successCriteria": "Provide design documentation, a recorded prototype demonstration or simulation, bench-test results against specified engineering criteria, and limitations; distinguish engineering performance from any untested human safety or therapeutic claims.",
+      "due": "2026-10-25",
+      "dateKind": "inferred",
+      "importance": 5,
+      "parents": [
+        {
+          "parentId": "capability-2031",
+          "weight": 1
+        }
+      ],
+      "achieved": false
+    },
+    {
+      "id": "mesonet-deliverable",
+      "title": "Produce a mesonet spiking-neural-network deliverable",
+      "level": "L3",
+      "description": "Make the optimized spiking-neural-network work reproducible and assess its contribution against appropriate baselines.",
+      "successCriteria": "Release a technical report and reproducible benchmark or demo comparing accuracy and computational or energy-related metrics against stated baselines; disclose dataset splits, configurations, and limitations, including whether energy is measured or estimated.",
+      "due": "2026-10-25",
+      "dateKind": "inferred",
+      "importance": 5,
+      "parents": [
+        {
+          "parentId": "capability-2031",
+          "weight": 1
+        }
+      ],
+      "achieved": false
+    },
+    {
+      "id": "learning-program",
+      "title": "Establish and execute an interdisciplinary capability program",
+      "level": "L3",
+      "description": "Convert the stated top-percentile aspirations into demonstrated capability rather than unverifiable self-rankings. Cover scientific problem selection, learning velocity, technical depth, strategy, leverage identification, prioritization, uncertainty, entrepreneurship, economics, and capital allocation.",
+      "successCriteria": "Create a baseline and learning plan by 2026-12-31; complete a coherent set of courses, research experiences, and applied projects across the named fields; review progress annually using external feedback, concrete outputs, and decision records; identify a defensible area of technical depth. Claim percentile standing only if a credible external benchmark supports it.",
+      "due": "2031-06-30",
+      "dateKind": "inferred",
+      "importance": 7,
+      "parents": [
+        {
+          "parentId": "capability-2031",
+          "weight": 1
+        }
+      ],
+      "achieved": false
+    },
+    {
+      "id": "research-and-deployment",
+      "title": "Build a record of serious research and real-world deployment",
+      "level": "L3",
+      "description": "Develop research depth and practical delivery in frontier environments and low-resource healthcare settings, with direct listening to patients and communities.",
+      "successCriteria": "Complete at least two serious research contributions, with at least one judged meaningfully field-advancing by independent experts; document frontier research and low-resource healthcare experience; and substantiate at least 1,000 distinct real users or beneficiaries of deployed technology, distinguishing usage from demonstrated agency gains.",
+      "due": "2031-09-30",
+      "dateKind": "inferred",
+      "importance": 8,
+      "parents": [
+        {
+          "parentId": "capability-2031",
+          "weight": 1
+        }
+      ],
+      "achieved": false
+    },
+    {
+      "id": "relationships-and-leadership",
+      "title": "Build a substantive network and practice institution-building skills",
+      "level": "L3",
+      "description": "Develop 50–100 genuine relationships across scientists, clinicians, founders, investors, policymakers, and nonprofit leaders through shared work and mutual contribution. Practice talent identification, leader selection, recruiting, persuasion, negotiation, coalition building, organizational design, and judging character.",
+      "successCriteria": "Maintain 50–100 substantive relationships evidenced by ongoing contact or collaboration; lead at least two collaborative projects with explicit roles and external feedback; and review examples of recruiting, negotiation, conflict resolution, judgment, integrity, and mission-over-ego decisions annually without asserting unsupported percentile rankings.",
+      "due": "2031-09-30",
+      "dateKind": "inferred",
+      "importance": 7,
+      "parents": [
+        {
+          "parentId": "capability-2031",
+          "weight": 1
+        }
+      ],
+      "achieved": false
+    },
+    {
+      "id": "select-wedge",
+      "title": "Choose a technically defensible and scalable agency-expanding wedge",
+      "level": "L3",
+      "description": "Identify the narrow problem where exceptional personal technical capability intersects demonstrated human need and a scalable commercial model.",
+      "successCriteria": "Compare at least three candidate problems using patient or community evidence, technical feasibility, access, commercial sustainability, and personal strengths; obtain scientific and practical expert critique; select one wedge with a prototype or substantive feasibility evidence and a documented rationale, risks, and next validation milestones.",
+      "due": "2031-12-31",
+      "dateKind": "inferred",
+      "importance": 8,
+      "parents": [
+        {
+          "parentId": "capability-2031",
+          "weight": 1
+        }
+      ],
+      "achieved": false
+    },
+    {
+      "id": "venture-validation",
+      "title": "Validate the initial venture’s function, access, and business model",
+      "level": "L3",
+      "description": "Translate the selected wedge into an organization delivering a narrow, measurable independence benefit in real settings.",
+      "successCriteria": "Establish the venture and relevant institutional partnerships; independently demonstrate functional gains in its intended population, reaching at least 100,000 distinct people by the parent checkpoint; document socioeconomic access and a repeatable commercial model; and maintain a credible plan for expansion to millions.",
+      "due": "2036-06-30",
+      "dateKind": "inferred",
+      "importance": 9,
+      "parents": [
+        {
+          "parentId": "venture-2036",
+          "weight": 1
+        }
+      ],
+      "achieved": false
+    },
+    {
+      "id": "venture-team",
+      "title": "Build leadership, financing, and delegated operations",
+      "level": "L3",
+      "description": "Develop from inventor into CEO and institution builder while assembling an exceptional team and sustainable financing.",
+      "successCriteria": "Build a team of roughly 50–200 people; separately document approximately $50–250 million in cumulative capital raised or revenue; define executive accountability and operating processes; and demonstrate a proposed three-month interval of reliable service delivery without founder involvement in routine operations.",
+      "due": "2036-12-31",
+      "dateKind": "inferred",
+      "importance": 8,
+      "parents": [
+        {
+          "parentId": "venture-2036",
+          "weight": 1
+        }
+      ],
+      "achieved": false
+    },
+    {
+      "id": "international-platform",
+      "title": "Expand the venture into an accessible international platform",
+      "level": "L3",
+      "description": "Extend the initial intervention into adjacent products only where evidence, economics, and user need support expansion.",
+      "successCriteria": "Operate in multiple countries, substantiate agency gains for 1–10 million distinct people by the parent checkpoint, validate at least one adjacent product or platform capability, and report affordability and access alongside financial sustainability and separately stated institutional resource measures.",
+      "due": "2041-06-30",
+      "dateKind": "inferred",
+      "importance": 9,
+      "parents": [
+        {
+          "parentId": "platform-2041",
+          "weight": 1
+        }
+      ],
+      "achieved": false
+    },
+    {
+      "id": "research-philanthropy-arm",
+      "title": "Launch a funded research or philanthropic arm",
+      "level": "L3",
+      "description": "Use the successful economic engine to support mission-aligned research and access programs while developing competence in development economics, governance, global health, conflict, and public policy.",
+      "successCriteria": "Establish the arm with a defined mandate, governance, initial multiyear funding, expert advisors, and evaluated initial programs; document a substantive study and field-learning program in the named policy and development areas; and show the commercial executive team managing daily operations.",
+      "due": "2041-12-31",
+      "dateKind": "inferred",
+      "importance": 8,
+      "parents": [
+        {
+          "parentId": "platform-2041",
+          "weight": 1
+        }
+      ],
+      "achieved": false
+    },
+    {
+      "id": "institution-research-capacity",
+      "title": "Establish durable scientific and humanitarian operating capacity",
+      "level": "L3",
+      "description": "Create the proposed combination of technology enterprise, research institutes, and global foundation with durable government, hospital, university, and foundation relationships.",
+      "successCriteria": "Operate funded laboratories or institutes and a portfolio beyond a single condition; maintain accountable institutional partnerships and multiyear financing; document workforce and partner capacity in the thousands, the proposed 20-country reach, and independently assessed progress toward 25 million people with improved independence.",
+      "due": "2046-12-31",
+      "dateKind": "inferred",
+      "importance": 9,
+      "parents": [
+        {
+          "parentId": "institution-2046",
+          "weight": 1
+        }
+      ],
+      "achieved": false
+    },
+    {
+      "id": "agency-measurement",
+      "title": "Implement independent agency measurement and capital accounting",
+      "level": "L3",
+      "description": "Design measurement early enough to guide later scale: count distinct people, define meaningful changes in capability and choice, and distinguish institutional contribution from attribution. Keep capital mobilized, deployed, enterprise valuation, and commitments separate.",
+      "successCriteria": "Publish a measurement protocol with beneficiary-defined agency outcomes, baseline and follow-up measures, durability and equity assessments, overlap controls, and independent review; apply it to the first substantial deployment and establish annual reporting. Define capital ledgers and inflation adjustment before aggregating long-horizon financial milestones.",
+      "due": "2031-12-31",
+      "dateKind": "inferred",
+      "importance": 7,
+      "parents": [
+        {
+          "parentId": "systemic-2051",
+          "weight": 1
+        }
+      ],
+      "achieved": false
+    },
+    {
+      "id": "three-agency-programs",
+      "title": "Build implementation capacity across three forms of agency",
+      "level": "L3",
+      "description": "Translate economic capacity into human-capability, economic-agency, and institutional-agency programs addressing implementation barriers as well as technology.",
+      "successCriteria": "Operate evaluated programs across all three forms of agency; document capabilities in incentives, policy, financing, logistics, and local implementation; independently substantiate progress toward 100 million distinct beneficiaries and at least $10 billion cumulatively deployed; and document the proposed 50-country partnership footprint.",
+      "due": "2051-12-31",
+      "dateKind": "inferred",
+      "importance": 10,
+      "parents": [
+        {
+          "parentId": "systemic-2051",
+          "weight": 1
+        }
+      ],
+      "achieved": false
+    },
+    {
+      "id": "national-systems-integration",
+      "title": "Embed successful interventions in national and multinational systems",
+      "level": "L3",
+      "description": "Work with national institutions and communities to sustain interventions beyond individual projects and participate credibly in stability and reconstruction initiatives.",
+      "successCriteria": "Document adopted and funded interventions in national health, education, or economic systems; independently evaluate national-scale poverty and large-scale disease programs; maintain accountable conflict-prevention or reconstruction partnerships; and substantiate progress toward 250 million distinct people and the cumulative deployment target.",
+      "due": "2056-12-31",
+      "dateKind": "inferred",
+      "importance": 10,
+      "parents": [
+        {
+          "parentId": "systems-2056",
+          "weight": 1
+        }
+      ],
+      "achieved": false
+    },
+    {
+      "id": "funding-and-succession",
+      "title": "Establish independent financing and leadership succession",
+      "level": "L3",
+      "description": "Build an endowment, investment platform, continuing commercial engine, or combination that supports long-horizon work and reduces dependence on the founder and annual fundraising.",
+      "successCriteria": "Adopt independently overseen spending and investment policies with stress-tested multiyear funding plans; appoint accountable successors for key executive functions; transfer routine decision authority; and demonstrate a proposed twelve months of reliable operations under the delegated leadership structure.",
+      "due": "2056-12-31",
+      "dateKind": "inferred",
+      "importance": 9,
+      "parents": [
+        {
+          "parentId": "systems-2056",
+          "weight": 1
+        }
+      ],
+      "achieved": false
+    },
+    {
+      "id": "historic-coalition-outcome",
+      "title": "Deliver and independently evaluate a civilization-scale coalition outcome",
+      "level": "L3",
+      "description": "Select and pursue one historically material outcome using a coalition of governments, companies, universities, philanthropies, and affected communities.",
+      "successCriteria": "Predefine the outcome, baseline, causal evidence standard, coalition contributions, and durability requirements; complete independent evaluation showing a historic improvement in at least one domain named in the parent goal; and publish attribution limits and adverse or unequal effects alongside results.",
+      "due": "2061-12-31",
+      "dateKind": "inferred",
+      "importance": 10,
+      "parents": [
+        {
+          "parentId": "historic-2061",
+          "weight": 1
+        }
+      ],
+      "achieved": false
+    },
+    {
+      "id": "legacy-audit",
+      "title": "Audit final scale, durable access, and founder-independent operation",
+      "level": "L3",
+      "description": "Create credible evidence that financial scale and institutional continuity translate into enduring freedom for affected people across the four motivating domains.",
+      "successCriteria": "Complete independent financial, outcome, access, and governance reviews validating the parent’s billion-person and $200 billion targets without double counting; document neurological and psychiatric, infectious-disease, economic-agency, and conflict-related accomplishments; and evidence a proposed twenty-four months of effective operation without founder approval of routine or major executive decisions within delegated authority.",
+      "due": "2066-12-31",
+      "dateKind": "inferred",
+      "importance": 10,
+      "parents": [
+        {
+          "parentId": "legacy-2066",
+          "weight": 1
+        }
+      ],
+      "achieved": false
+    },
+    {
+      "id": "fitness-baseline",
+      "title": "Establish strength and 5K baselines and a sustainable routine",
+      "level": "L3",
+      "description": "Record current fitness and choose a repeatable schedule compatible with school and recovery. Baseline-dependent outcome targets are intentionally left for review rather than invented.",
+      "successCriteria": "Record consistent strength measures and a safely completed 5K time or appropriate initial running benchmark; choose measurable improvement targets and a weekly routine; track sessions and recovery; and schedule the first quarterly progress review.",
+      "due": "2026-09-30",
+      "dateKind": "inferred",
+      "importance": 4,
+      "parents": [
+        {
+          "parentId": "health-2031",
+          "weight": 1
+        }
+      ],
+      "achieved": false
+    },
+    {
+      "id": "fitness-progress",
+      "title": "Complete an initial cycle of strength and running progress",
+      "level": "L3",
+      "description": "Follow the agreed routine and evaluate progress in bodybuilding-style strength development and 5K performance.",
+      "successCriteria": "Complete at least two quarterly reviews using consistent measures; document adherence, strength progress, and change in 5K performance against the chosen baseline targets; and revise the routine based on recovery and school demands.",
+      "due": "2027-06-30",
+      "dateKind": "inferred",
+      "importance": 5,
+      "parents": [
+        {
+          "parentId": "health-2031",
+          "weight": 1
+        }
+      ],
+      "achieved": false
+    },
+    {
+      "id": "family-routine",
+      "title": "Protect recurring meaningful time with family",
+      "level": "L3",
+      "description": "Agree on a practical family-time commitment during senior year and maintain it through application pressures.",
+      "successCriteria": "Set a proposed weekly shared activity or uninterrupted conversation by 2026-09-30; maintain it in at least three weeks of each month through the school year; and review with family whether the time feels meaningful, adjusting the routine together.",
+      "due": "2027-06-30",
+      "dateKind": "inferred",
+      "importance": 5,
+      "parents": [
+        {
+          "parentId": "relationships-2031",
+          "weight": 1
+        }
+      ],
+      "achieved": false
+    },
+    {
+      "id": "diverse-experiences",
+      "title": "Build a habit of varied life experiences and reflection",
+      "level": "L3",
+      "description": "Seek experiences beyond the existing neuroscience and admissions focus to broaden understanding of people, communities, and personal interests.",
+      "successCriteria": "Complete at least six varied experiences across at least three categories such as service, arts or culture, practical work, outdoor activity, and unfamiliar communities; record brief reflections on what changed in understanding and how those lessons inform future choices.",
+      "due": "2027-08-31",
+      "dateKind": "inferred",
+      "importance": 5,
+      "parents": [
+        {
+          "parentId": "relationships-2031",
+          "weight": 1
+        }
+      ],
+      "achieved": false
+    }
+  ]
+}

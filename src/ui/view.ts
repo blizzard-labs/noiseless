@@ -1,40 +1,47 @@
-import { addDays, effective, factors, localDate, Task } from '../core/model';
+import { addDays, effective, factors, localDate, Task, Provider } from '../core/model';
 import { attribution, planDay, progress, rank, scores } from '../core/engine';
 import { paths } from '../storage/store';
 import { Service } from '../service';
+import { DraftReview } from './draft';
 
 export type Page='everything'|'today'|'progress'|'goals'|'setup';
 export interface Host {open(path:string):void;notify(message:string):void;}
 interface ViewState {expanded:Set<string>;draft:string;search:string;showDone:boolean;}
 const states=new WeakMap<Service,Map<Page,ViewState>>();
 export class Dashboard {
+  private goalMap?:DraftReview;
   private state:ViewState;private pendingRender=false;
   private get expanded(){return this.state.expanded;}private get draft(){return this.state.draft;}private set draft(v:string){this.state.draft=v;}
   private get search(){return this.state.search;}private set search(v:string){this.state.search=v;}
   private get showDone(){return this.state.showDone;}private set showDone(v:boolean){this.state.showDone=v;}
-  private listener=()=>{const a=this.root.ownerDocument.activeElement;if(a&&this.root.contains(a)&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)){this.pendingRender=true;return;}this.render();};
+  private listener=()=>{if(this.goalMap?.isEditing){this.pendingRender=true;return;}const a=this.root.ownerDocument.activeElement;if(a&&this.root.contains(a)&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)){this.pendingRender=true;return;}this.render();};
   private focusout=()=>setTimeout(()=>{if(this.pendingRender){this.pendingRender=false;this.listener();}},0);
   constructor(readonly root:HTMLElement,readonly page:Page,readonly service:Service,readonly host:Host){let pages=states.get(service);if(!pages){pages=new Map();states.set(service,pages);}this.state=pages.get(page)??{expanded:new Set(),draft:'',search:'',showDone:false};pages.set(page,this.state);root.classList.add('noiseless');root.addEventListener('focusout',this.focusout);service.listeners.add(this.listener);this.render();}
-  destroy(){this.service.listeners.delete(this.listener);this.root.removeEventListener('focusout',this.focusout);}
+  destroy(){this.goalMap?.destroy();this.service.listeners.delete(this.listener);this.root.removeEventListener('focusout',this.focusout);}
   private el<K extends keyof HTMLElementTagNameMap>(tag:K,cls='',text='',parent:HTMLElement=this.root):HTMLElementTagNameMap[K]{const e=this.root.ownerDocument.createElement(tag);e.className=cls;e.textContent=text;parent.append(e);return e;}
   private button(parent:HTMLElement,text:string,fn:()=>void|Promise<void>,cls='nl-button'){const b=this.el('button',cls,text,parent);b.type='button';b.addEventListener('click',()=>void this.run(fn,b));return b;}
   private async run(fn:()=>void|Promise<void>,button?:HTMLButtonElement){if(button)button.disabled=true;try{await fn();}catch(e){this.host.notify((e as Error).message);}finally{if(button?.isConnected)button.disabled=false;}}
   private open(path:string){this.host.open(path);}
-  private input(parent:HTMLElement,label:string,type='text',value=''){const l=this.el('label','nl-field',label,parent);const i=this.el('input','', '',l);i.type=type;i.value=value;i.setAttribute('aria-label',label);return i;}
+  private input(parent:HTMLElement,label:string,type='text',value=''){const l=this.el('label','nl-field',label,parent);const i=this.el('input','', '',l);i.type=type;i.value=value;if(type==='checkbox')l.classList.add('nl-checkbox-field');i.setAttribute('aria-label',label);return i;}
   render(){
-    const s=this.service;this.root.replaceChildren();
+    const s=this.service;this.goalMap?.destroy();this.root.replaceChildren();this.root.classList.toggle('nl-goals-page',this.page==='goals');
     const nav=this.el('nav','nl-nav');nav.setAttribute('aria-label','Noiseless');
     this.el('span','nl-brand','◌  noiseless',nav);
-    for(const p of ['today','everything','progress'] as const){const b=this.button(nav,p[0].toUpperCase()+p.slice(1),()=>this.open(paths[p]),`nl-tab ${p===this.page?'is-active':''}`);if(p===this.page)b.setAttribute('aria-current','page');}
-    const intro=this.el('header','nl-heading');
-    const titles={today:['Make space for what matters.','A few deliberate steps, sized to your day.'],everything:['Let it all out.','One place for everything on your mind.'],progress:['Your work adds up.','Small steps. A clearer direction.'],goals:['Begin with what matters.','Your missions, and the work that supports them.'],setup:['A little setup. A quieter day.','Make these choices once. Adjust whenever life changes.']};
-    this.el('p','nl-eyebrow',this.page==='today'?new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'}):'NOISELESS',intro);
-    this.el('h2','nl-title',titles[this.page][0],intro);this.el('p','nl-subtitle',titles[this.page][1],intro);
+    for(const p of ['today','everything','progress','goals','setup'] as const){const b=this.button(nav,p[0].toUpperCase()+p.slice(1),()=>this.open(p==='setup'?paths.config:paths[p]),`nl-tab ${p===this.page?'is-active':''}`);if(p===this.page)b.setAttribute('aria-current','page');}
     if(s.error){const error=this.el('div','nl-alert',s.error);error.setAttribute('role','alert');this.button(error,'Open setup',()=>this.open(paths.config));return;}
     if(this.page==='today')this.today();if(this.page==='everything')this.everything();if(this.page==='progress')this.progress();if(this.page==='goals')this.goals();if(this.page==='setup')this.setup();
+    this.arrangePage();
     const footer=this.el('footer','nl-footer');this.button(footer,'Goals',()=>this.open(paths.goals),'nl-link');this.button(footer,'Setup',()=>this.open(paths.config),'nl-link');
     const status=this.el('span','nl-status',s.busy?'● Working quietly…':`${s.tasks.filter(t=>!!t.pending&&t.status!=='done').length} awaiting enrichment`,footer);status.setAttribute('aria-live','polite');
     this.button(footer,'Refresh estimates',()=>s.enrich(true),'nl-link');
+  }
+  private arrangePage(){
+    const sections=Array.from(this.root.children).filter(el=>!el.classList.contains('nl-nav'));
+    const content=this.el('div',`nl-page-content nl-page-${this.page}`);
+    if(this.page==='everything'||this.page==='today'){
+      const side=this.el('aside','nl-page-sidebar','',content),main=this.el('div','nl-page-main','',content);
+      sections.forEach((section,index)=>(index===0?side:main).append(section));
+    }else sections.forEach(section=>content.append(section));
   }
   private capture(parent:HTMLElement){const form=this.el('form','nl-capture','',parent);const textarea=this.el('textarea','','',form);textarea.placeholder='What’s on your mind?';textarea.rows=2;textarea.value=this.draft;textarea.setAttribute('aria-label','Capture tasks, one per line');textarea.addEventListener('input',()=>this.draft=textarea.value);
     const bottom=this.el('div','nl-capture-bottom','',form);this.el('span','nl-hint','One task per line · ⌘/Ctrl + Enter to capture',bottom);
@@ -88,18 +95,19 @@ export class Dashboard {
   }
   private progress(){const s=this.service,p=progress(s.tasks);const cards=this.el('div','nl-stats');for(const [label,value,sub]of [['This week',p.weekPoints.toFixed(1),'output points'],['All time',p.points.toFixed(1),'output points'],['Completed',String(p.done),'tasks']]){const card=this.el('section','nl-stat','',cards);this.el('p','nl-label',label,card);this.el('strong','nl-stat-value',value,card);this.el('p','nl-hint',sub,card);}
     this.el('p','nl-hint','Estimated contribution to your goals. Outcome attainment is recorded separately.');
-    const activity=this.el('section','nl-panel');this.el('h3','','A little progress, day by day',activity);const chart=this.el('div','nl-chart','',activity);chart.setAttribute('role','img');chart.setAttribute('aria-label','Output points over the last fourteen days');const max=Math.max(1,...p.days.map(d=>d.points));
+    const activity=this.el('section','nl-panel nl-activity-panel');this.el('h3','','A little progress, day by day',activity);const chart=this.el('div','nl-chart','',activity);chart.setAttribute('role','img');chart.setAttribute('aria-label','Output points over the last fourteen days');const max=Math.max(1,...p.days.map(d=>d.points));
     for(const day of p.days){const col=this.el('div','nl-chart-column','',chart),bar=this.el('div','nl-chart-bar','',col);bar.style.height=`${Math.max(2,day.points/max*100)}%`;bar.title=`${day.date}: ${day.points.toFixed(1)} points`;this.el('span','nl-chart-day',day.date.slice(8),col);}
     const table=this.el('details','nl-secondary','',activity);this.el('summary','nl-link','Read chart values',table);p.days.forEach(d=>this.el('p','nl-hint',`${d.date}: ${d.points.toFixed(1)} points · ${d.minutes} minutes`,table));
     this.el('h3','nl-section-label','WHERE YOUR EFFORT GOES');this.el('p','nl-hint',`${p.loggedMinutes} logged minutes · ${p.estimatedMinutes} estimated minutes. Totals are shown separately at each level.`);
-    for(const level of ['L1','L2','L3']){const rows=Object.values(p.byGoal).filter(x=>x.goal.level===level).sort((a,b)=>b.minutes-a.minutes);if(!rows.length)continue;const section=this.el('section','nl-panel');this.el('h3','',level==='L1'?'Life missions':level==='L2'?'Milestones':'Checkpoints',section);const total=rows.reduce((n,x)=>n+x.minutes,0);rows.forEach(g=>{const row=this.el('div','nl-allocation','',section);const line=this.el('div','nl-spread','',row);this.el('span','',g.goal.title,line);this.el('span','nl-hint',`${Math.round(g.minutes)} min · ${g.points.toFixed(1)} pts`,line);const meter=this.el('progress','nl-meter','',row);meter.max=Math.max(1,total);meter.value=g.minutes;meter.setAttribute('aria-label',`${g.goal.title}: ${Math.round(g.minutes)} minutes`);});}
+    for(const level of ['L1','L2','L3']){const rows=Object.values(p.byGoal).filter(x=>x.goal.level===level).sort((a,b)=>b.minutes-a.minutes);if(!rows.length)continue;const section=this.el('section','nl-panel nl-allocation-panel');this.el('h3','',level==='L1'?'Life missions':level==='L2'?'Milestones':'Checkpoints',section);const total=rows.reduce((n,x)=>n+x.minutes,0);rows.forEach(g=>{const row=this.el('div','nl-allocation','',section);const line=this.el('div','nl-spread','',row);this.el('span','',g.goal.title,line);this.el('span','nl-hint',`${Math.round(g.minutes)} min · ${g.points.toFixed(1)} pts`,line);const meter=this.el('progress','nl-meter','',row);meter.max=Math.max(1,total);meter.value=g.minutes;meter.setAttribute('aria-label',`${g.goal.title}: ${Math.round(g.minutes)} minutes`);});}
     if(!Object.keys(p.byGoal).length)this.empty(this.root,'Your first steps will appear here.','Log a work session or complete a task linked to your goals.');
     const milestones=s.graph.goals.filter(g=>g.achieved);if(milestones.length){this.el('h3','nl-section-label','MILESTONES REACHED');milestones.forEach(g=>this.el('p','','✓ '+g.title));}
     this.button(this.root,'Browse weekly reflections',()=>this.open('Noiseless/Insights/Week of '+this.monday()+'.md'),'nl-link');
   }
   private monday(){const d=new Date();d.setDate(d.getDate()-((d.getDay()+6)%7));return localDate(d);}
-  private goals(){const s=this.service;if(!s.graph.goals.length)this.empty(this.root,'Give your work a direction.','Describe your missions, milestones, and checkpoints. Review the AI draft before activating it.');
+  private goals(){const s=this.service;this.goalMap=new DraftReview(this.el('section','nl-active-goal-map'),s,this.host,'goals');if(!s.graph.goals.length)this.empty(this.root,'Give your work a direction.','Describe your missions, milestones, and checkpoints. Review the AI draft before activating it.');
     const tools=this.el('div','nl-toolbar');this.button(tools,'Write goal brief',()=>this.open(paths.brief));this.button(tools,'Draft from brief',async()=>{await s.draft();this.open(paths.draft);});this.button(tools,'Review draft',()=>this.open(paths.draft),'nl-link');
+    this.manualDraft();
     for(const level of ['L1','L2','L3']){const goals=s.graph.goals.filter(g=>g.level===level);if(!goals.length)continue;this.el('h3','nl-section-label',level==='L1'?'LIFE MISSIONS':level==='L2'?'LARGE MILESTONES':'MAJOR CHECKPOINTS');for(const g of goals){const card=this.el('details','nl-goal-card');this.el('summary','',`${g.achieved?'✓ ':''}${g.title}`,card);this.el('p','',g.description,card);this.el('p','nl-rationale',`Success: ${g.successCriteria}`,card);this.el('p','nl-hint',`${g.dateKind==='inferred'?'Inferred target':'Target'}: ${g.due}`,card);
       for(const p of g.parents){const parent=s.graph.goals.find(x=>x.id===p.parentId);const row=this.el('div','nl-allocation','',card);this.el('span','nl-hint',`${Math.round(p.weight*100)}% → ${parent?.title}`,row);const bar=this.el('progress','nl-meter','',row);bar.max=1;bar.value=p.weight;bar.setAttribute('aria-label',`${Math.round(p.weight*100)}% to ${parent?.title}`);}
       const map=this.el('details','nl-secondary','',card);this.el('summary','nl-link','Contribution paths',map);this.relationshipDiagram(map,g.id);for(const [id,share]of Object.entries(attribution(g.id,s.graph)))this.el('p','nl-hint',`${g.title} → ${s.graph.goals.find(g=>g.id===id)?.title}: ${(share*100).toFixed(0)}%`,map);
@@ -118,9 +126,65 @@ export class Dashboard {
   }
   private setup(){const c=this.service.config;const panel=this.el('section','nl-panel');this.el('h3','','Your normal focus budget',panel);const form=this.el('div','nl-edit-grid','',panel);const weekday=this.input(form,'Weekday minutes','number',c.weekdayMinutes===null?'':String(c.weekdayMinutes));const weekend=this.input(form,'Weekend minutes','number',c.weekendMinutes===null?'':String(c.weekendMinutes));weekday.min=weekend.min='0';
     this.button(panel,'Save capacity',async()=>{const {configSchema}=await import('../core/model');await this.service.store.mutate(paths.config,configSchema,c=>({...c,weekdayMinutes:weekday.value===''?null:Number(weekday.value),weekendMinutes:weekend.value===''?null:Number(weekend.value)}));await this.service.refresh();},'nl-button nl-primary');
-    const steps=[['1','Connect LM Studio','Start its Developer server. Set the model ID and endpoint in this note’s properties.'],['2','Describe your goals','Write naturally in Goal brief, then review the proposed graph before approval.'],['3','Make the weights yours','Adjust the five priority weights in this note’s properties.'],['4','Add cloud models when ready','Configure model IDs, token prices, and your spending limit. Save keys in Obsidian Settings → Noiseless.']];
-    steps.forEach(([n,title,body])=>{const step=this.el('section','nl-setup-step');this.el('span','nl-step-number',n,step);const text=this.el('div','','',step);this.el('h3','',title,text);this.el('p','nl-hint',body,text);});
-    this.button(this.root,'Open goal brief',()=>this.open(paths.brief),'nl-button');
+    const weightsPanel=this.el('section','nl-panel');this.el('h3','','Priority weights',weightsPanel);
+    this.el('p','nl-hint','Choose how much each factor contributes to priority. Weights are relative and do not need to total 100. Set a factor to 0 to exclude it.',weightsPanel);
+    this.el('p','nl-hint','Use the Goals tab to write your goal brief and review a draft before approving it.',weightsPanel);
+    const weightsForm=this.el('div','nl-edit-grid','',weightsPanel);
+    const labels={urgency:'Urgency',alignment:'Goal alignment',impact:'Expected impact',roi:'Return on effort',reputation:'Reputation'};
+    const weightFields=factors.map(factor=>{const input=this.input(weightsForm,`${labels[factor]} weight`,'number',String(c.weights[factor]));input.min='0';input.step='any';return {factor,input};});
+    const shares=this.el('p','nl-hint','',weightsPanel);shares.setAttribute('aria-live','polite');
+    const updateShares=()=>{const values=weightFields.map(({input})=>input.value.trim()===''?NaN:Number(input.value));const total=values.reduce((sum,value)=>sum+value,0);
+      shares.textContent=values.some(value=>!Number.isFinite(value)||value<0)?'Enter a non-negative number for each weight.':total===0?'At least one weight must be greater than zero.':weightFields.map(({factor},i)=>`${labels[factor]}: ${(100*values[i]/total).toFixed(1)}%`).join(' · ');
+    };weightFields.forEach(({input})=>input.addEventListener('input',updateShares));updateShares();
+    this.button(weightsPanel,'Save priority weights',async()=>{
+      const weights={...this.service.config.weights};for(const {factor,input} of weightFields){const value=Number(input.value);if(!input.value.trim()||!Number.isFinite(value)||value<0)throw new Error('Enter a non-negative number for each priority weight.');weights[factor]=value;}
+      if(!Object.values(weights).some(value=>value>0))throw new Error('At least one priority weight must be greater than zero.');
+      const {configSchema}=await import('../core/model');await this.service.store.mutate(paths.config,configSchema,c=>({...c,weights}));await this.service.refresh();this.host.notify('Priority weights saved. Priorities and today’s plan have been updated.');
+    },'nl-button nl-primary');
+    this.manualDraft();
+    for(const provider of ['lmstudio','openai','anthropic'] as const)this.connection(provider);
+    const budgetPanel=this.el('section','nl-panel nl-budget-panel');this.el('h3','','Cloud spending limit',budgetPanel);
+    const budget=this.input(budgetPanel,'Monthly cloud budget (USD)','number',String(c.monthlyCloudBudget));budget.min='0';budget.step='0.01';
+    this.el('p','nl-hint','Zero pauses cloud processing. Set current token prices in each cloud connection. This is a local spending estimate.',budgetPanel);
+    this.button(budgetPanel,'Save cloud budget',async()=>{const {configSchema}=await import('../core/model');if(!budget.value.trim())throw new Error('Enter a monthly budget, or 0 to pause cloud processing.');await this.service.store.mutate(paths.config,configSchema,c=>({...c,monthlyCloudBudget:Number(budget.value)}));await this.service.refresh();this.host.notify('Cloud budget saved.');});
+
+  }
+  private manualDraft(){
+    const panel=this.el('section','nl-panel nl-manual-panel');this.el('h3','','Draft goals with your own agent',panel);
+    this.el('p','nl-hint','Export one Markdown prompt with your goal brief, current goals, instructions, and output schema. Give it to ChatGPT, Claude, or another agent. No model request is made by these controls.',panel);
+    this.button(panel,'Export goal prompt',async()=>this.open(await this.service.exportDraftPrompt()));
+    this.el('p','nl-hint','Save the returned JSON in Noiseless/Goal exchange/Outputs, then enter its filename below. A Markdown file containing one JSON code block also works. Export creates the folder.',panel);
+    const fields=this.el('div','nl-edit-grid','',panel);const filename=this.input(fields,'Output filename','text','result.json');
+    this.button(panel,'Import for review',async()=>{await this.service.importDraftOutput(filename.value.trim());this.open(paths.draft);this.host.notify('Imported for review. Run Approve goal draft only after reviewing it.');});
+    this.el('p','nl-hint','Import validates the graph, archives the previous draft, and updates Goal draft.md. Active goals stay unchanged until you approve.',panel);
+  }
+  private connection(provider:Provider){
+    const p=this.service.config.providers[provider],local=provider==='lmstudio',name=local?'LM Studio':provider==='openai'?'OpenAI':'Anthropic';
+    const panel=this.el('section','nl-panel');panel.dataset.provider=provider;this.el('h3','',`${name} connection`,panel);
+    this.el('p','nl-hint',local?'Load a model in LM Studio and start its Developer server. Copy the exact model identifier below.':'Enter a model that supports structured output and its current USD prices per million tokens. Save your API key in Obsidian Settings → Noiseless.',panel);
+    const enabled=this.input(panel,`Enable ${name}`,'checkbox');enabled.checked=p.enabled;
+    const fields=this.el('div','nl-edit-grid nl-connection-fields','',panel);
+    const endpoint=this.input(fields,'Server URL','url',p.baseUrl);
+    const model=this.input(fields,'Model identifier','text',p.model);
+    let inputPrice:HTMLInputElement|undefined,outputPrice:HTMLInputElement|undefined;
+    if(!local){inputPrice=this.input(fields,'Input price (USD / million tokens)','number',String(p.inputPerMillion));outputPrice=this.input(fields,'Output price (USD / million tokens)','number',String(p.outputPerMillion));for(const field of [inputPrice,outputPrice]){field.min='0';field.step='any';}}
+    this.el('p','nl-hint',local?'A bare server address automatically gets /v1. For authentication, choose an LM Studio token in Obsidian Settings → Noiseless.':`API-key secret: ${p.credential||'Not selected'}. Choose or create it in Obsidian Settings → Noiseless.`,panel);
+    const assignments=this.el('fieldset','nl-assignments','',panel);this.el('legend','','Assign AI tasks',assignments);
+    const enrichment=this.input(assignments,'Task analysis — goals, estimates, and scores','checkbox');enrichment.checked=p.tasks?.enrichment??true;
+    const goalDraft=this.input(assignments,'Draft goals from your brief','checkbox');goalDraft.checked=p.tasks?.goalDraft??true;
+    this.el('p','nl-hint','Unchecked tasks never use this connection. If both local and cloud analysis are checked, local prepares a draft and cloud refines it. Goal drafting tries Anthropic, OpenAI, then local, using only checked, enabled connections.',panel);
+    this.button(panel,`Save ${name} connection`,async()=>{
+      let url:URL;try{url=new URL(endpoint.value.trim());}catch{throw new Error('Enter a valid server URL.');}
+      if(!['http:','https:'].includes(url.protocol))throw new Error('The server URL must use http or https.');
+      if(url.username||url.password||url.search||url.hash)throw new Error('Use a server URL without credentials, query parameters, or a fragment. Store keys in Obsidian Settings → Noiseless.');
+      if(url.pathname==='/'||!url.pathname)url.pathname='/v1';
+      const baseUrl=url.toString().replace(/\/+$/,''),modelId=model.value.trim();
+      if(enabled.checked&&!modelId)throw new Error('Enter the model identifier before enabling the connection.');
+      if(inputPrice&&outputPrice&&(!inputPrice.value.trim()||!outputPrice.value.trim()))throw new Error('Enter both token prices.');
+      const {configSchema}=await import('../core/model');
+      await this.service.store.mutate(paths.config,configSchema,c=>({...c,providers:{...c.providers,[provider]:{...c.providers[provider],enabled:enabled.checked,baseUrl,model:modelId,tasks:{enrichment:enrichment.checked,goalDraft:goalDraft.checked},...(!local?{inputPerMillion:Number(inputPrice!.value),outputPerMillion:Number(outputPrice!.value)}:{})}}}));
+      await this.service.refresh();this.host.notify(`${name} settings saved. Capture a task or refresh estimates to use the model.`);
+    },'nl-button nl-primary');
   }
   private empty(parent:HTMLElement,title:string,body:string){const e=this.el('section','nl-empty','',parent);this.el('div','nl-empty-mark','◌',e);this.el('h3','',title,e);this.el('p','nl-hint',body,e);}
 }

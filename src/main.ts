@@ -1,10 +1,11 @@
-import { App, MarkdownRenderChild, Modal, Notice, Plugin, PluginSettingTab, SecretComponent, Setting, TFile, normalizePath } from 'obsidian';
+import { App, MarkdownRenderChild, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, SecretComponent, Setting, TFile, normalizePath } from 'obsidian';
 import { configSchema, localDate } from './core/model';
 import { ModelRouter } from './models/router';
 import { transport } from './models/http';
 import { Service, MarkdownLedger } from './service';
 import { paths, ROOT, Store, VaultIO } from './storage/store';
 import { Dashboard, Page } from './ui/view';
+import { DraftReview } from './ui/draft';
 
 class ObsidianIO implements VaultIO {
   constructor(private app:App){}
@@ -51,12 +52,24 @@ export default class NoiselessPlugin extends Plugin {
     this.addCommand({id:'open-setup',name:'Open setup',callback:()=>this.open(paths.config)});
     this.addRibbonIcon('circle-dashed','Noiseless: Today',()=>this.open(paths.today));this.addSettingTab(new SecretsSettings(this.app,this));
     this.registerMarkdownCodeBlockProcessor('noiseless',(source,el,ctx)=>{
+      if(source.trim()==='draft'){
+        const child=new MarkdownRenderChild(el);ctx.addChild(child);const view=new DraftReview(el,this.service,{open:path=>this.open(path),notify:message=>new Notice(message)});
+        child.register(()=>view.destroy());child.registerEvent(this.app.vault.on('modify',file=>{if(file.path===paths.draft)void view.reload();}));return;
+      }
       const page=source.trim() as Page;if(!['today','everything','progress','goals','setup'].includes(page)){el.setText('Noiseless: use today, everything, progress, goals, or setup.');return;}
       const child=new MarkdownRenderChild(el);ctx.addChild(child);const view=new Dashboard(el,page,this.service,{open:path=>this.open(path),notify:message=>new Notice(message)});child.register(()=>view.destroy());
     });
+    this.registerMarkdownPostProcessor((el,ctx)=>{
+      if(ctx.sourcePath===paths.config)el.classList.add('nl-setup-prose');
+    });
     this.app.workspace.onLayoutReady(()=>void action(async()=>{
+      this.app.workspace.iterateAllLeaves(leaf=>{if(leaf.view instanceof MarkdownView)void action(()=>this.preview(leaf.view as MarkdownView))();});
       await store.init();await this.service.refresh(true);this.ready=true;await this.remember();void this.service.enrich();
     })());
+    this.registerEvent(this.app.workspace.on('file-open',file=>{
+      const view=this.app.workspace.getActiveViewOfType(MarkdownView);
+      if(file&&view?.file===file)void action(()=>this.preview(view))();
+    }));
     const event=(file:TFile)=>{if(this.ready&&file.path.startsWith(ROOT+'/'))this.schedule();};
     this.registerEvent(this.app.vault.on('modify',f=>{if(f instanceof TFile)event(f);}));
     this.registerEvent(this.app.vault.on('create',f=>{if(f instanceof TFile)event(f);}));
@@ -65,7 +78,11 @@ export default class NoiselessPlugin extends Plugin {
     this.registerInterval(window.setInterval(()=>{if(this.ready&&this.day!==localDate()){this.day=localDate();void this.service.refresh();}},30000));
     this.registerInterval(window.setInterval(()=>{if(this.ready)void this.service.retryPending();},600000));
   }
-  open(path:string){void this.app.workspace.openLinkText(path,'',false,{active:true});}
+  open(path:string){void this.app.workspace.openLinkText(path,'',false,{active:true,state:{mode:'preview'}});}
+  private async preview(view:MarkdownView){
+    if(!view.file?.path.startsWith(ROOT+'/')||view.getMode()==='preview')return;
+    await view.setState({...view.getState(),mode:'preview'},{history:false});
+  }
   private async remember(){for(const path of [paths.everything,paths.config,paths.goals,...(await this.service.store.taskFiles()).map(f=>f.path)])if(await this.service.store.io.exists(path))this.watched.set(path,await this.service.store.io.read(path));}
   private schedule(){if(this.timer)clearTimeout(this.timer);this.timer=setTimeout(()=>void this.changed(),700);}
   private async changed(){

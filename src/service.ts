@@ -1,9 +1,10 @@
 import { z } from 'zod';
-import { Config, configSchema, defaultConfig, effective, GoalGraph, graphSchema, localDate, Task } from './core/model';
-import { complete, logSession, planDay, progress, rank } from './core/engine';
+import { Config, configSchema, defaultConfig, effective, Goal, goalSchema, GoalGraph, graphSchema, localDate, Task } from './core/model';
+import { complete, logSession, planDay, progress, rank, validateGraph } from './core/engine';
 import { ModelRouter, enrichmentKey, Ledger, Usage } from './models/router';
-import { paths, ROOT, Store } from './storage/store';
-import { escapeCell, readNote, safeLink, writeNote } from './storage/markdown';
+import { paths, ROOT, Store, withDraftReview } from './storage/store';
+import { escapeCell, readNote, safeLink, writeNote, patchNote } from './storage/markdown';
+import { exportGoalPrompt, manualFolder, outputFolder, parseGoalOutput } from './models/manual';
 
 const usageSchema=z.object({schema:z.literal(1),rows:z.array(z.object({id:z.string(),at:z.string(),provider:z.enum(['lmstudio','openai','anthropic']),model:z.string(),operation:z.string(),status:z.enum(['reserved','ok','error']),cost:z.number(),inputTokens:z.number(),outputTokens:z.number(),message:z.string()}))});
 export class MarkdownLedger implements Ledger {
@@ -38,9 +39,36 @@ export class Service {
   async dailyCapacity(minutes:number){await this.serial(()=>this.store.mutate(paths.config,configSchema,c=>({...c,dailyOverrides:{...c.dailyOverrides,[localDate()]:minutes}})));await this.refresh();}
   async goalOutcome(id:string,achieved:boolean){await this.serial(()=>this.store.mutate(paths.goals,graphSchema,g=>({...g,goals:g.goals.map(goal=>goal.id===id?{...goal,achieved}:goal)})));await this.refresh();}
   async draft(){if(this.worker)throw new Error('Wait for current model processing to finish');this.worker=true;this.busy='Drafting goals';this.emit();
-    try{const brief=await this.store.io.read(paths.brief),graph=await this.router.draft(brief,this.graph);await this.store.put(paths.draft,writeNote(graph,'\n# Review your goal draft\n\nThese are proposed goals, dates, and connections. Edit the properties in Source mode, then run **Noiseless: Approve goal draft**. Approval activates this graph and keeps the previous version in History.\n'));}finally{this.worker=false;this.busy='';this.emit();}
+    try{const brief=await this.store.io.read(paths.brief),graph=await this.router.draft(brief,this.graph);await this.store.put(paths.draft,withDraftReview(writeNote(graph,'\n# Review your goal draft\n\nThese are proposed goals, dates, and connections. Edit the properties in Source mode, then run **Noiseless: Approve goal draft**. Approval activates this graph and keeps the previous version in History.\n')));}finally{this.worker=false;this.busy='';this.emit();}
   }
-  async approve(){await this.serial(()=>this.store.approveDraft());this.attempted.clear();await this.refresh();void this.enrich();}
+  async exportDraftPrompt(){return this.serial(async()=>{
+    const brief=await this.store.io.read(paths.brief),graph=await this.store.graph();
+    const readme=`${outputFolder}/README.md`;
+    if(!await this.store.io.exists(readme))await this.store.io.create(readme,'# Goal outputs\n\nPlace result.json here, or a .md file containing one fenced JSON block. In Noiseless Goals, enter its filename and choose Import for review. Import replaces Goal draft.md only; active goals change only after approval.\n');
+    const path=`${manualFolder}/Prompt-${crypto.randomUUID()}.md`;
+    await this.store.io.create(path,exportGoalPrompt(brief,graph));return path;
+  });}
+  async importDraftOutput(filename:string){return this.serial(async()=>{
+    if(this.worker)throw new Error('Wait for current model processing to finish');
+    if(!/^[^/\\]+\.(json|md)$/i.test(filename)||filename.toLowerCase()==='readme.md')throw new Error('Enter a .json or .md filename from the Outputs folder.');
+    const graph=parseGoalOutput(await this.store.io.read(`${outputFolder}/${filename}`));
+    if(await this.store.io.exists(paths.draft))await this.store.io.create(`${ROOT}/History/Goal-draft-${crypto.randomUUID()}.md`,await this.store.io.read(paths.draft));
+    await this.store.put(paths.draft,withDraftReview(writeNote(graph,'\n# Review imported goal draft\n\nValidate these proposed goals and connections, then run **Noiseless: Approve goal draft**. Active goals have not changed.\n')));
+  });}
+  async editGoal(source:'draft'|'goals',reviewedText:string,id:string,edited:Goal){return this.serial(async()=>{
+    const path=source==='draft'?paths.draft:paths.goals;
+    if(await this.store.io.read(path)!==reviewedText)throw new Error('The graph changed. Cancel editing and reload before saving.');
+    const goal=goalSchema.parse(edited),current=readNote(reviewedText,graphSchema).data;
+    if(!current.goals.some(g=>g.id===id))throw new Error('Goal no longer exists.');
+    if(goal.id!==id&&current.goals.some(g=>g.id===goal.id))throw new Error('Goal IDs must be unique.');
+    const next={...current,goals:current.goals.map(g=>{const updated=g.id===id?goal:g;return {...updated,parents:updated.parents.map(p=>({...p,parentId:p.parentId===id?goal.id:p.parentId}))};})};
+    validateGraph(next);
+    if(source==='goals'){
+      if(await this.store.io.exists(paths.draft))await this.store.io.create(`${ROOT}/History/Goal-draft-${crypto.randomUUID()}.md`,await this.store.io.read(paths.draft));
+      await this.store.put(paths.draft,withDraftReview(writeNote(next,'\n# Review goal changes\n\nThese edits are staged for review. Approve the draft to activate them.\n')));
+    }else await this.store.io.process(path,text=>{if(text!==reviewedText)throw new Error('The draft changed. Reload before saving.');return patchNote(text,graphSchema,()=>next);});
+  });}
+  async approve(reviewedText?:string){await this.serial(async()=>{if(reviewedText!==undefined&&await this.store.io.read(paths.draft)!==reviewedText)throw new Error('The draft changed. Reload and review it before approving.');await this.store.approveDraft();});this.attempted.clear();await this.refresh();void this.enrich();}
   retryPending(){this.attempted.clear();return this.enrich();}
   async enrich(force=false){
     if(this.worker||this.stopped||this.error)return;if(force)this.attempted.clear();this.worker=true;
