@@ -1,0 +1,9 @@
+{
+  "id": "noiseless",
+  "name": "Noiseless",
+  "version": "0.1.0",
+  "minAppVersion": "1.13.1",
+  "description": "Capture everything. Focus on what matters. See your progress.",
+  "author": "Noiseless",
+  "isDesktopOnly": true
+}

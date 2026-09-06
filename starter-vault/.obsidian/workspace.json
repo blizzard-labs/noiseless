@@ -1,0 +1,45 @@
+{
+  "main": {
+    "id": "main",
+    "type": "split",
+    "children": [
+      {
+        "id": "tabs",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "leaf",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Noiseless/Today.md",
+                "mode": "preview",
+                "source": false
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "left",
+    "type": "split",
+    "children": [],
+    "direction": "horizontal",
+    "width": 260,
+    "collapsed": true
+  },
+  "right": {
+    "id": "right",
+    "type": "split",
+    "children": [],
+    "direction": "horizontal",
+    "width": 260,
+    "collapsed": true
+  },
+  "active": "leaf",
+  "lastOpenFiles": []
+}
