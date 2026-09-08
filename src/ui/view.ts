@@ -3,28 +3,30 @@ import { attribution, planDay, progress, rank, scores } from '../core/engine';
 import { paths } from '../storage/store';
 import { Service } from '../service';
 import { DraftReview } from './draft';
+import { taskAnalysisPrompt } from '../models/router';
 
 export type Page='everything'|'today'|'progress'|'goals'|'setup';
 export interface Host {open(path:string):void;notify(message:string):void;}
-interface ViewState {expanded:Set<string>;draft:string;search:string;showDone:boolean;}
+interface ViewState {expanded:Set<string>;draft:string;search:string;showDone:boolean;activityOpen?:boolean;}
 const states=new WeakMap<Service,Map<Page,ViewState>>();
 export class Dashboard {
-  private goalMap?:DraftReview;
+  private goalMap?:DraftReview;private terminalLog?:HTMLElement;
+  private activityListener=()=>this.updateTerminal();
   private state:ViewState;private pendingRender=false;
   private get expanded(){return this.state.expanded;}private get draft(){return this.state.draft;}private set draft(v:string){this.state.draft=v;}
   private get search(){return this.state.search;}private set search(v:string){this.state.search=v;}
   private get showDone(){return this.state.showDone;}private set showDone(v:boolean){this.state.showDone=v;}
   private listener=()=>{if(this.goalMap?.isEditing){this.pendingRender=true;return;}const a=this.root.ownerDocument.activeElement;if(a&&this.root.contains(a)&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)){this.pendingRender=true;return;}this.render();};
   private focusout=()=>setTimeout(()=>{if(this.pendingRender){this.pendingRender=false;this.listener();}},0);
-  constructor(readonly root:HTMLElement,readonly page:Page,readonly service:Service,readonly host:Host){let pages=states.get(service);if(!pages){pages=new Map();states.set(service,pages);}this.state=pages.get(page)??{expanded:new Set(),draft:'',search:'',showDone:false};pages.set(page,this.state);root.classList.add('noiseless');root.addEventListener('focusout',this.focusout);service.listeners.add(this.listener);this.render();}
-  destroy(){this.goalMap?.destroy();this.service.listeners.delete(this.listener);this.root.removeEventListener('focusout',this.focusout);}
+  constructor(readonly root:HTMLElement,readonly page:Page,readonly service:Service,readonly host:Host){let pages=states.get(service);if(!pages){pages=new Map();states.set(service,pages);}this.state=pages.get(page)??{expanded:new Set(),draft:'',search:'',showDone:false};pages.set(page,this.state);root.classList.add('noiseless');root.addEventListener('focusout',this.focusout);service.listeners.add(this.listener);service.router.activityListeners.add(this.activityListener);this.render();}
+  destroy(){this.service.router.activityListeners.delete(this.activityListener);this.goalMap?.destroy();this.service.listeners.delete(this.listener);this.root.removeEventListener('focusout',this.focusout);}
   private el<K extends keyof HTMLElementTagNameMap>(tag:K,cls='',text='',parent:HTMLElement=this.root):HTMLElementTagNameMap[K]{const e=this.root.ownerDocument.createElement(tag);e.className=cls;e.textContent=text;parent.append(e);return e;}
   private button(parent:HTMLElement,text:string,fn:()=>void|Promise<void>,cls='nl-button'){const b=this.el('button',cls,text,parent);b.type='button';b.addEventListener('click',()=>void this.run(fn,b));return b;}
   private async run(fn:()=>void|Promise<void>,button?:HTMLButtonElement){if(button)button.disabled=true;try{await fn();}catch(e){this.host.notify((e as Error).message);}finally{if(button?.isConnected)button.disabled=false;}}
   private open(path:string){this.host.open(path);}
   private input(parent:HTMLElement,label:string,type='text',value=''){const l=this.el('label','nl-field',label,parent);const i=this.el('input','', '',l);i.type=type;i.value=value;if(type==='checkbox')l.classList.add('nl-checkbox-field');i.setAttribute('aria-label',label);return i;}
   render(){
-    const s=this.service;this.goalMap?.destroy();this.root.replaceChildren();this.root.classList.toggle('nl-goals-page',this.page==='goals');
+    this.terminalLog=undefined;const s=this.service;this.goalMap?.destroy();this.root.replaceChildren();this.root.classList.toggle('nl-goals-page',this.page==='goals');
     const nav=this.el('nav','nl-nav');nav.setAttribute('aria-label','Noiseless');
     this.el('span','nl-brand','◌  noiseless',nav);
     for(const p of ['today','everything','progress','goals','setup'] as const){const b=this.button(nav,p[0].toUpperCase()+p.slice(1),()=>this.open(p==='setup'?paths.config:paths[p]),`nl-tab ${p===this.page?'is-active':''}`);if(p===this.page)b.setAttribute('aria-current','page');}
@@ -32,6 +34,7 @@ export class Dashboard {
     if(this.page==='today')this.today();if(this.page==='everything')this.everything();if(this.page==='progress')this.progress();if(this.page==='goals')this.goals();if(this.page==='setup')this.setup();
     this.arrangePage();
     const footer=this.el('footer','nl-footer');this.button(footer,'Goals',()=>this.open(paths.goals),'nl-link');this.button(footer,'Setup',()=>this.open(paths.config),'nl-link');
+    if(s.lastDeleted)this.button(footer,'Undo delete',()=>s.undoDelete(),'nl-link');
     const status=this.el('span','nl-status',s.busy?'● Working quietly…':`${s.tasks.filter(t=>!!t.pending&&t.status!=='done').length} awaiting enrichment`,footer);status.setAttribute('aria-live','polite');
     this.button(footer,'Refresh estimates',()=>s.enrich(true),'nl-link');
   }
@@ -41,7 +44,32 @@ export class Dashboard {
     if(this.page==='everything'||this.page==='today'){
       const side=this.el('aside','nl-page-sidebar','',content),main=this.el('div','nl-page-main','',content);
       sections.forEach((section,index)=>(index===0?side:main).append(section));
+      if(this.page==='everything')this.terminal(side);
+    }else if(this.page==='setup'){
+      for(const section of sections){
+        const hints=Array.from(section.querySelectorAll(':scope > p.nl-hint')).filter(el=>!el.hasAttribute('aria-live'));
+        if(hints.length){
+          const help=this.el('details','nl-setup-help','',section as HTMLElement);
+          this.el('summary','','How to use',help);
+          hints.forEach(hint=>help.append(hint));
+        }
+      }
+      const columns=[this.el('div','nl-setup-column','',content),this.el('div','nl-setup-column','',content)];
+      sections.forEach((section,index)=>{(section as HTMLElement).style.order=String(index);columns[index%2].append(section);});
     }else sections.forEach(section=>content.append(section));
+  }
+  private terminal(parent:HTMLElement){
+    const panel=this.el('details','nl-agent-terminal','',parent);panel.open=this.state.activityOpen??false;this.el('summary','nl-activity-summary','AI activity',panel);panel.addEventListener('toggle',()=>this.state.activityOpen=panel.open);const bar=this.el('div','nl-spread','',panel);
+    this.button(bar,'Copy output',async()=>{const text=this.service.router.activity.map(event=>`${event.at} · ${event.provider} · ${event.status}\n${event.text}`).join('\n\n');if(!text){this.host.notify('No AI output to copy yet.');return;}const clipboard=this.root.ownerDocument.defaultView?.navigator.clipboard;if(!clipboard)throw new Error('Clipboard is unavailable in this view.');await clipboard.writeText(text);this.host.notify('AI output copied.');},'nl-link');
+    this.button(bar,'Clear',()=>{this.service.router.activity=[];this.updateTerminal();},'nl-link');
+    this.el('p','nl-hint','Live status and validated model output. Includes the result’s rationale; private reasoning is not displayed.',panel);
+    this.terminalLog=this.el('div','nl-terminal-log','',panel);this.terminalLog.setAttribute('role','log');this.terminalLog.setAttribute('aria-live','polite');this.terminalLog.setAttribute('aria-label','Live AI activity');this.updateTerminal();
+    this.button(panel,'Retry pending tasks',()=>this.service.retryPending());
+  }
+  private updateTerminal(){const log=this.terminalLog;if(!log)return;const follow=log.scrollHeight-log.scrollTop-log.clientHeight<40;log.replaceChildren();
+    if(!this.service.router.activity.length)this.el('p','nl-hint','Ready. Capture a task to start analysis.',log);
+    for(const event of this.service.router.activity){const entry=this.el('div',`nl-terminal-entry is-${event.status}`,'',log);this.el('div','nl-terminal-meta',`${new Date(event.at).toLocaleTimeString()} · ${event.provider} · ${event.status}`,entry);this.el('pre','',event.text,entry);}
+    if(follow)log.scrollTop=log.scrollHeight;
   }
   private capture(parent:HTMLElement){const form=this.el('form','nl-capture','',parent);const textarea=this.el('textarea','','',form);textarea.placeholder='What’s on your mind?';textarea.rows=2;textarea.value=this.draft;textarea.setAttribute('aria-label','Capture tasks, one per line');textarea.addEventListener('input',()=>this.draft=textarea.value);
     const bottom=this.el('div','nl-capture-bottom','',form);this.el('span','nl-hint','One task per line · ⌘/Ctrl + Enter to capture',bottom);
@@ -61,30 +89,56 @@ export class Dashboard {
     const details=this.el('details','','',bottom);this.el('summary','nl-link','Adjust today',details);const field=this.input(details,'Focused minutes','number',String(p.capacity));field.min='0';field.max='1440';this.button(details,'Save',()=>s.dailyCapacity(Number(field.value)));
     if(!p.capacity){this.empty(this.root,'Give today a little room.','Set your normal focused-work capacity in Setup, or adjust today above.');this.button(this.root,'Set up capacity',()=>this.open(paths.config),'nl-button nl-primary');}
     if(p.conflicts.length){const a=this.el('details','nl-alert');this.el('summary','',`${p.conflicts.length} planning ${p.conflicts.length===1?'note':'notes'}`,a);p.conflicts.forEach(c=>this.el('p','',c,a));}
-    if(p.sessions.length){this.el('h3','nl-section-label','UP NEXT');const first=p.sessions[0];this.task(this.root,s.tasks.find(t=>t.id===first.taskId)!,first.minutes,true);
+    if(p.sessions.length){const first=p.sessions[0];this.task(this.root,s.tasks.find(t=>t.id===first.taskId)!,first.minutes,true);
       if(p.sessions.length>1){this.el('h3','nl-section-label','THEN, WHEN YOU’RE READY');const list=this.el('div','nl-task-list');p.sessions.slice(1).forEach(x=>this.task(list,s.tasks.find(t=>t.id===x.taskId)!,x.minutes));}
     }else if(p.capacity)this.empty(this.root,'Room to breathe.','No more sessions fit today. Capture a task, revise a used-up estimate, or enjoy the space.');
     const all=this.el('details','nl-secondary');this.el('summary','',`Full priority list · ${ranked.length} tasks`,all);ranked.forEach(r=>this.task(all,r.task));
+  }
+  private goalPicker(parent:HTMLElement,current:string){
+    const state={value:current};const wrap=this.el('div','nl-field','',parent);this.el('span','','Goal',wrap);
+    const picker=this.el('details','nl-goal-picker','',wrap),summary=this.el('summary','','',picker);
+    const goals=[{id:'unsorted',title:'Unsorted',description:'',successCriteria:''},...this.service.graph.goals.filter(g=>g.level==='L3')];
+    summary.textContent=goals.find(g=>g.id===current)?.title??'Unknown goal — choose a checkpoint';
+    const search=this.input(picker,'Search goals','search');search.placeholder='Search checkpoints…';
+    const results=this.el('div','nl-goal-options','',picker);results.setAttribute('role','group');results.setAttribute('aria-label','Matching checkpoints');
+    const render=()=>{results.replaceChildren();const query=search.value.trim().toLowerCase();const matches=goals.filter(g=>(g.title+' '+g.description+' '+g.successCriteria).toLowerCase().includes(query));
+      for(const goal of matches){const button=this.button(results,goal.title,()=>{state.value=goal.id;summary.textContent=goal.title;picker.open=false;summary.focus();},'nl-goal-option');button.setAttribute('aria-pressed',String(goal.id===state.value));}
+      if(!matches.length)this.el('p','nl-hint','No matching checkpoints.',results);
+    };search.addEventListener('input',render);picker.addEventListener('toggle',()=>{if(picker.open){render();search.focus();}});picker.addEventListener('keydown',e=>{if(e.key==='Escape'){picker.open=false;summary.focus();}});render();return state;
   }
   private task(parent:HTMLElement,t:Task,session?:number,hero=false):HTMLElement{
     const s=this.service,e=effective(t),goal=s.graph.goals.find(g=>g.id===e.goalId),row=this.el('article',`nl-task ${hero?'nl-hero':''} ${t.status==='done'?'is-done':''}`,'',parent);
     const head=this.el('div','nl-task-head','',row);const check=this.el('input','nl-check','',head);check.type='checkbox';check.checked=t.status==='done';check.setAttribute('aria-label',`Complete ${t.title}`);check.addEventListener('change',()=>void this.run(()=>s.toggle(t.id,check.checked)));
     const center=this.el('div','nl-task-main','',head);if(hero)this.el('p','nl-eyebrow','YOUR NEXT STEP',center);this.el(hero?'h3':'p','nl-task-title',t.title,center);
     const meta=this.el('div','nl-task-meta','',center);this.el('span','nl-goal-tag',goal?.title??'Unsorted',meta);this.el('span','',`${session??e.estimateMinutes} min${session&&session<e.estimateMinutes?' session':''}`,meta);
+    const deadlineChip=this.el('span','nl-deadline-chip',`${e.dateKind==='explicit'?'Due':'Planned'} ${e.due}`,meta);deadlineChip.title=e.dateKind==='explicit'?'Explicit task deadline':'Inferred planning date';
     if(e.due<localDate())this.el('span','nl-date-alert',e.dateKind==='explicit'?'Overdue':'Past planning date',meta);
     if(t.status==='blocked')this.el('span','','Blocked',meta);if(t.snoozedUntil&&t.snoozedUntil>localDate())this.el('span','',`Snoozed to ${t.snoozedUntil}`,meta);if(t.pending)this.el('span','nl-pending','Pending',meta);
     const more=this.el('details','nl-task-details','',row);more.open=this.expanded.has(t.id);this.el('summary','nl-link','Details & scores',more);more.addEventListener('toggle',()=>more.open?this.expanded.add(t.id):this.expanded.delete(t.id));
     const values=scores(t,s.graph,s.config),sum=Object.values(s.config.weights).reduce((a,b)=>a+b,0);
-    const total=factors.reduce((n,k)=>n+values[k]*s.config.weights[k]/sum,0);this.el('p','nl-rank',`Priority ${total.toFixed(2)} / 10`,more);
-    for(const k of factors){const line=this.el('div','nl-score-line','',more);this.el('span','',k[0].toUpperCase()+k.slice(1),line);const meter=this.el('progress','nl-score-meter','',line);meter.max=10;meter.value=values[k];meter.setAttribute('aria-label',`${k}: ${values[k].toFixed(1)} out of 10`);this.el('span','',`${values[k].toFixed(1)} × ${(100*s.config.weights[k]/sum).toFixed(0)}% = ${(values[k]*s.config.weights[k]/sum).toFixed(2)}`,line);}
+    const total=factors.reduce((n,k)=>n+values[k]*s.config.weights[k]/sum,0);const priority=this.el('p','nl-rank',`Priority ${total.toFixed(2)} / 10`,more);
+    const changed=new Set<typeof factors[number]>();
+    const labels={urgency:'Urgency',alignment:'Alignment',impact:'Impact',roi:'ROI',reputation:'Reputation'};
+    for(const k of factors){
+      const line=this.el('div','nl-score-line','',more);this.el('span','',labels[k],line);
+      const slider=this.el('input','nl-score-slider','',line);slider.type='range';slider.min='1';slider.max='10';slider.step='0.1';slider.value=String(values[k]);slider.setAttribute('aria-label',`${labels[k]} score`);
+      const contribution=this.el('span','','',line);
+      const update=()=>{slider.style.setProperty('--nl-slider-fill',`${(values[k]-1)/9*100}%`);contribution.textContent=`${values[k].toFixed(1)} × ${(100*s.config.weights[k]/sum).toFixed(0)}% = ${(values[k]*s.config.weights[k]/sum).toFixed(2)}`;slider.setAttribute('aria-valuetext',`${values[k].toFixed(1)} out of 10`);};update();
+      slider.addEventListener('input',()=>{values[k]=Number(slider.value);changed.add(k);update();priority.textContent=`Priority ${factors.reduce((n,f)=>n+values[f]*s.config.weights[f]/sum,0).toFixed(2)} / 10 · Unsaved`;});
+    }
+    this.el('p','nl-hint','Adjust scores from 1–10, then Save overrides to update priority. Manual scores stay fixed until reset.',more);
     this.el('p','nl-rationale',e.rationale,more);this.el('p','nl-hint',`${e.dateKind==='explicit'?'Deadline':'Inferred planning date'}: ${e.due} · ${t.provider||'Provisional'} · confidence ${(e.confidence*100).toFixed(0)}%`,more);
+    if(t.inferred?.deadlineInterpretation&&!t.overrides.due)this.el('p','nl-hint',`Deadline interpretation: ${t.inferred.deadlineInterpretation.explanation}`,more);
     if(t.pending)this.el('p','nl-hint',t.pending,more);
     const form=this.el('div','nl-edit-grid','',more);const duration=this.input(form,'Estimated minutes','number',String(e.estimateMinutes));duration.min='1';
-    const due=this.input(form,'Deadline override (optional)','date',t.overrides.due??'');
-    const label=this.el('label','nl-field','Goal',form),select=this.el('select','','',label);for(const g of [{id:'unsorted',title:'Unsorted'},...s.graph.goals.filter(g=>g.level==='L3')]){const o=this.el('option','',g.title,select);o.value=g.id;}select.value=e.goalId;
-    this.button(more,'Save overrides',()=>{const patch:Partial<Task['overrides']>={};if(Number(duration.value)!==e.estimateMinutes)patch.estimateMinutes=Number(duration.value);if(due.value){patch.due=due.value;patch.dateKind='explicit';}if(select.value!==e.goalId)patch.goalId=select.value;return s.override(t.id,patch);});
-    const actions=this.el('div','nl-task-actions','',more);this.button(actions,'Open Markdown',()=>this.open(s.filePaths.get(t.id)!),'nl-link');
+    const due=this.input(form,'Deadline','date',e.due);
+    const select=this.goalPicker(form,e.goalId);
+    this.button(more,'Save overrides',()=>{const patch:Partial<Task['overrides']>={};for(const k of changed)patch[k]=values[k];if(Number(duration.value)!==e.estimateMinutes)patch.estimateMinutes=Number(duration.value);if(due.value&&due.value!==e.due){patch.due=due.value;patch.dateKind='explicit';}if(select.value!==e.goalId)patch.goalId=select.value;return s.override(t.id,patch);});
+    if(factors.some(k=>t.overrides[k]!==undefined))this.button(more,'Reset manual scores',()=>s.override(t.id,{urgency:undefined,alignment:undefined,impact:undefined,roi:undefined,reputation:undefined}),'nl-link');
+    const actions=this.el('div','nl-task-actions','',more);this.button(actions,'Delete task',async()=>{await s.deleteTask(t.id);this.host.notify('Task deleted. Use Undo delete to restore it.');},'nl-link nl-delete');this.button(actions,'Open Markdown',()=>this.open(s.filePaths.get(t.id)!),'nl-link');
     if(t.status!=='done'){this.button(actions,t.status==='blocked'?'Unblock':'Block',()=>s.status(t.id,t.status==='blocked'?'open':'blocked'),'nl-link');this.button(actions,'Snooze to tomorrow',()=>s.status(t.id,'open',addDays(localDate(),1)),'nl-link');}
+    const prompt=this.el('details','nl-secondary','',more);this.el('summary','nl-link','View AI prompt',prompt);
+    prompt.addEventListener('toggle',()=>{if(!prompt.open||prompt.querySelector('pre'))return;const request=taskAnalysisPrompt(t,s.graph);this.el('pre','nl-prompt-text',request.system+'\n\nINPUT\n'+JSON.stringify(request.input,null,2),prompt);});
     if(t.snapshot)this.el('p','nl-hint',`Fixed output credit: ${t.snapshot.points.toFixed(1)} points · graph v${t.snapshot.graphVersion}`,more);
     if(t.status!=='done'){
       const log=this.el('div',`nl-log ${hero?'nl-log-hero':''}`,'',row);const minutes=this.input(log,'Session minutes','number',String(session??Math.min(60,e.estimateMinutes)));minutes.min='1';minutes.max='1440';
@@ -127,8 +181,8 @@ export class Dashboard {
   private setup(){const c=this.service.config;const panel=this.el('section','nl-panel');this.el('h3','','Your normal focus budget',panel);const form=this.el('div','nl-edit-grid','',panel);const weekday=this.input(form,'Weekday minutes','number',c.weekdayMinutes===null?'':String(c.weekdayMinutes));const weekend=this.input(form,'Weekend minutes','number',c.weekendMinutes===null?'':String(c.weekendMinutes));weekday.min=weekend.min='0';
     this.button(panel,'Save capacity',async()=>{const {configSchema}=await import('../core/model');await this.service.store.mutate(paths.config,configSchema,c=>({...c,weekdayMinutes:weekday.value===''?null:Number(weekday.value),weekendMinutes:weekend.value===''?null:Number(weekend.value)}));await this.service.refresh();},'nl-button nl-primary');
     const weightsPanel=this.el('section','nl-panel');this.el('h3','','Priority weights',weightsPanel);
-    this.el('p','nl-hint','Choose how much each factor contributes to priority. Weights are relative and do not need to total 100. Set a factor to 0 to exclude it.',weightsPanel);
-    this.el('p','nl-hint','Use the Goals tab to write your goal brief and review a draft before approving it.',weightsPanel);
+    this.el('p','nl-hint','Weights are relative; they don’t need to total 100. Use 0 to exclude a factor.',weightsPanel);
+    
     const weightsForm=this.el('div','nl-edit-grid','',weightsPanel);
     const labels={urgency:'Urgency',alignment:'Goal alignment',impact:'Expected impact',roi:'Return on effort',reputation:'Reputation'};
     const weightFields=factors.map(factor=>{const input=this.input(weightsForm,`${labels[factor]} weight`,'number',String(c.weights[factor]));input.min='0';input.step='any';return {factor,input};});
@@ -151,12 +205,12 @@ export class Dashboard {
   }
   private manualDraft(){
     const panel=this.el('section','nl-panel nl-manual-panel');this.el('h3','','Draft goals with your own agent',panel);
-    this.el('p','nl-hint','Export one Markdown prompt with your goal brief, current goals, instructions, and output schema. Give it to ChatGPT, Claude, or another agent. No model request is made by these controls.',panel);
+    this.el('p','nl-hint','Export the prompt and give it to your own agent. This uses no API credits.',panel);
     this.button(panel,'Export goal prompt',async()=>this.open(await this.service.exportDraftPrompt()));
-    this.el('p','nl-hint','Save the returned JSON in Noiseless/Goal exchange/Outputs, then enter its filename below. A Markdown file containing one JSON code block also works. Export creates the folder.',panel);
+    this.el('p','nl-hint','Save the response in Noiseless/Goal exchange/Outputs and enter its filename above. Accepts JSON or Markdown with one JSON code block.',panel);
     const fields=this.el('div','nl-edit-grid','',panel);const filename=this.input(fields,'Output filename','text','result.json');
     this.button(panel,'Import for review',async()=>{await this.service.importDraftOutput(filename.value.trim());this.open(paths.draft);this.host.notify('Imported for review. Run Approve goal draft only after reviewing it.');});
-    this.el('p','nl-hint','Import validates the graph, archives the previous draft, and updates Goal draft.md. Active goals stay unchanged until you approve.',panel);
+    this.el('p','nl-hint','Import creates a draft for review. Approve it to update your active goals.',panel);
   }
   private connection(provider:Provider){
     const p=this.service.config.providers[provider],local=provider==='lmstudio',name=local?'LM Studio':provider==='openai'?'OpenAI':'Anthropic';

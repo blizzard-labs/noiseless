@@ -35,7 +35,7 @@ export function scores(task:Task,graph:GoalGraph,config:Config,today=localDate()
   const regular=Math.max(1,config.weekdayMinutes??config.weekendMinutes??240);
   const slack=dayDifference(effectiveDue(task,graph),today)-remaining(task)/regular;
   const rate=e.impact/(e.estimateMinutes/60);
-  return {urgency:clamp(10-9*slack/14,1,10),alignment,impact:e.impact,roi:1+9*rate/(rate+10),reputation:e.reputation};
+  return {urgency:task.overrides.urgency??clamp(10-9*slack/14,1,10),alignment:task.overrides.alignment??alignment,impact:e.impact,roi:task.overrides.roi??(1+9*rate/(rate+10)),reputation:e.reputation};
 }
 export function rank(tasks:Task[],graph:GoalGraph,config:Config,today=localDate()){
   const sum=Object.values(config.weights).reduce((s,x)=>s+x,0);

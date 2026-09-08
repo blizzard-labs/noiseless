@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { Config, configSchema, defaultConfig, effective, Goal, goalSchema, GoalGraph, graphSchema, localDate, Task } from './core/model';
+import { Config, configSchema, defaultConfig, effective, Goal, goalSchema, GoalGraph, graphSchema, localDate, Task, taskSchema } from './core/model';
 import { complete, logSession, planDay, progress, rank, validateGraph } from './core/engine';
 import { ModelRouter, enrichmentKey, Ledger, Usage } from './models/router';
 import { paths, ROOT, Store, withDraftReview } from './storage/store';
@@ -17,6 +17,7 @@ export class MarkdownLedger implements Ledger {
   }
 }
 export class Service {
+  lastDeleted:string|null=null;
   tasks:Task[]=[];graph:GoalGraph={schema:1,version:1,goals:[]};config:Config=structuredClone(defaultConfig);
   filePaths=new Map<string,string>();error='';busy='';listeners=new Set<()=>void>();stopped=false;
   private chain:Promise<unknown>=Promise.resolve();private worker=false;private attempted=new Map<string,string>();
@@ -32,6 +33,16 @@ export class Service {
     this.emit();
   });}
   async capture(text:string){await this.serial(()=>this.store.capture(text));await this.refresh();void this.enrich();}
+  async deleteTask(id:string){await this.serial(async()=>{
+    await this.store.updateTask(id,t=>({...t,deletedAt:new Date().toISOString()}));
+    await this.store.io.process(paths.everything,text=>text.split('\n').filter(line=>!line.includes(`<!-- noiseless:task:${id} -->`)).join('\n'));
+    this.lastDeleted=id;
+  });await this.refresh();}
+  async undoDelete(){const id=this.lastDeleted;if(!id)return;await this.serial(async()=>{
+    const file=(await this.store.taskFiles(true)).find(row=>row.task.id===id);if(!file)return;
+    await this.store.io.process(file.path,text=>patchNote(text,taskSchema,t=>({...t,deletedAt:null})));
+    this.lastDeleted=null;
+  });await this.refresh();}
   async toggle(id:string,done:boolean){await this.serial(async()=>{const task=await this.store.updateTask(id,t=>complete(t,done,this.graph,this.config));await this.store.synchronizeCapture(task);});await this.refresh();}
   async session(id:string,minutes:number){await this.serial(()=>this.store.updateTask(id,t=>logSession(t,minutes,this.graph,this.config)));await this.refresh();}
   async override(id:string,patch:Partial<Task['overrides']>){await this.serial(()=>this.store.updateTask(id,t=>({...t,overrides:{...t.overrides,...patch},pending:'Manual values saved'})));await this.refresh();void this.enrich();}
@@ -77,6 +88,7 @@ export class Service {
         if(this.stopped)break;if(candidate.status==='done')continue;
         const key=enrichmentKey(candidate,this.graph,this.config);
         if((candidate.enrichmentKey===key&&!force)||this.attempted.get(candidate.id)===key)continue;
+        this.router.report('noiseless','queued',candidate.title);
         this.attempted.set(candidate.id,key);this.busy=`Clarifying “${candidate.title}”`;this.emit();
         try{
           const result=await this.router.enrich(candidate,this.graph);

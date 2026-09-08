@@ -39,8 +39,9 @@
 .noiseless .nl-page-content{min-width:0}
 .noiseless .nl-page-sidebar,.noiseless .nl-page-main{min-width:0}
 .noiseless .nl-page-sidebar{margin-bottom:22px}
-.noiseless .nl-page-setup>.nl-panel{margin:0}
-.noiseless .nl-page-setup{display:grid;grid-template-columns:minmax(0,1fr);gap:20px;align-items:start}
+.noiseless .nl-page-setup .nl-panel{margin:0;min-width:0}
+.noiseless .nl-page-setup{display:flex;flex-direction:column;gap:20px}
+.noiseless .nl-setup-column{display:contents}
 .noiseless .nl-page-content>.nl-panel{min-width:0}
 .noiseless .nl-page-content .nl-hint{max-width:90ch}
 .noiseless .nl-page-content input,.noiseless .nl-page-content select{min-width:0}
@@ -55,9 +56,8 @@
  .noiseless .nl-page-sidebar textarea{min-height:150px}
  .noiseless .nl-page-main>.nl-toolbar:first-child{margin-top:0}
  .noiseless .nl-page-main>.nl-section-label:first-child{margin-top:0}
- .noiseless .nl-page-setup{grid-template-columns:repeat(2,minmax(0,1fr))}
- .noiseless .nl-budget-panel{grid-column:1/-1}
- .noiseless .nl-budget-panel>.nl-field{max-width:320px;margin:12px 0}
+ .noiseless .nl-page-setup{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
+ .noiseless .nl-setup-column{display:flex;flex-direction:column;gap:20px;min-width:0}
  .noiseless .nl-page-progress{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;align-items:start}
  .noiseless .nl-page-progress>*{grid-column:1/-1}
  .noiseless .nl-page-progress>.nl-allocation-panel{grid-column:auto;margin:0}
@@ -72,3 +72,49 @@
 
 /* Hide Obsidian’s inline page title consistently across Noiseless tabs. */
 .markdown-preview-view:has(.noiseless) .inline-title{display:none}
+
+/* Setup settings are edited through its Reading-view controls. */
+.markdown-preview-view:has(.nl-page-setup) .metadata-container{display:none}
+.noiseless .nl-checkbox-field{justify-content:flex-start}
+.noiseless .nl-agent-terminal{margin-top:20px;border:1px solid var(--background-modifier-border);border-radius:12px;background:var(--background-secondary);padding:16px;min-width:0}
+.noiseless .nl-agent-terminal h3{font-size:13px;font-weight:600}
+.noiseless .nl-terminal-log{max-height:380px;overflow:auto;margin:14px 0;overscroll-behavior:contain}
+.noiseless .nl-terminal-entry{border-top:1px solid var(--background-modifier-border);padding:10px 0}
+.noiseless .nl-terminal-meta{font-size:10px;color:var(--text-muted);margin-bottom:6px}
+.noiseless .nl-terminal-entry pre{font-family:var(--font-monospace);font-size:11px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere;background:transparent;margin:0;padding:0;user-select:text}
+.noiseless .nl-terminal-entry.is-error{color:var(--text-error)}
+.noiseless .nl-goal-picker{position:relative;min-width:0}
+.noiseless .nl-goal-picker>summary{font-size:12px;border:1px solid var(--background-modifier-border);background:var(--background-primary);border-radius:6px;padding:7px 10px;min-height:34px;overflow-wrap:anywhere}
+.noiseless .nl-goal-picker[open]{padding:10px;border:1px solid var(--background-modifier-border);border-radius:8px;background:var(--background-primary)}
+.noiseless .nl-goal-picker>.nl-field{margin:10px 0}
+.noiseless .nl-goal-options{max-height:230px;overflow:auto;display:flex;flex-direction:column;gap:4px}
+.noiseless .nl-goal-option{width:100%;height:auto;white-space:normal;text-align:left;padding:8px 10px;font-size:12px;border:0;box-shadow:none;background:var(--background-secondary);color:var(--text-normal);border-radius:5px}
+.noiseless .nl-goal-option[aria-pressed=true]{background:var(--nl-soft);font-weight:600}
+.noiseless .nl-delete{color:var(--text-error)}
+.noiseless .nl-prompt-text{white-space:pre-wrap;overflow-wrap:anywhere;max-height:380px;overflow:auto;font-size:11px}
+.noiseless .nl-rationale{overflow-wrap:anywhere;white-space:normal}
+.noiseless .nl-deadline-chip{display:inline-block;padding:2px 7px;border:1px solid var(--background-modifier-border);border-radius:4px;white-space:nowrap;color:var(--text-muted)}
+.noiseless .nl-activity-summary{font-size:13px;font-weight:600;cursor:pointer}
+.noiseless .nl-agent-terminal[open]>.nl-activity-summary{margin-bottom:12px}
+
+.noiseless input.nl-score-slider{width:100%;min-width:0;height:20px;padding:0;box-shadow:none;accent-color:var(--nl-accent);cursor:pointer}
+
+.noiseless input.nl-score-slider{appearance:none;-webkit-appearance:none;background:transparent;border:0;border-radius:0;outline-offset:4px}
+.noiseless input.nl-score-slider::-webkit-slider-runnable-track{height:4px;border:0;border-radius:999px;background:linear-gradient(to right,var(--interactive-accent) 0%,var(--interactive-accent) var(--nl-slider-fill),var(--background-modifier-border) var(--nl-slider-fill),var(--background-modifier-border) 100%)}
+.noiseless input.nl-score-slider::-webkit-slider-thumb{appearance:none;-webkit-appearance:none;width:14px;height:14px;position:relative;top:0;transform:none;margin-top:-5px;border:0;border-radius:50%;background:var(--interactive-accent);box-shadow:none}
+.noiseless input.nl-score-slider::-moz-range-track{height:4px;border:0;border-radius:999px;background:var(--background-modifier-border)}
+.noiseless input.nl-score-slider::-moz-range-progress{height:4px;border-radius:999px;background:var(--interactive-accent)}
+.noiseless input.nl-score-slider::-moz-range-thumb{width:14px;height:14px;border:0;border-radius:50%;background:var(--interactive-accent)}
+
+/* Setup uses one spacing rhythm; longer guidance stays behind disclosure. */
+.noiseless .nl-page-setup .nl-panel{display:flex;flex-direction:column;gap:18px;padding:24px}
+.noiseless .nl-page-setup .nl-panel>h3{margin:0;font-size:14px;font-weight:600}
+.noiseless .nl-page-setup .nl-panel>.nl-edit-grid{margin:0;gap:16px}
+.noiseless .nl-page-setup .nl-field{margin:0;gap:8px}
+.noiseless .nl-page-setup .nl-panel>button{align-self:flex-start;margin:0}
+.noiseless .nl-page-setup .nl-panel>.nl-hint{margin:0;font-size:12px;line-height:1.6}
+.noiseless .nl-page-setup .nl-assignments{margin:0;padding:0;border:0;display:flex;flex-direction:column;gap:12px}
+.noiseless .nl-page-setup .nl-assignments legend{padding:0;margin-bottom:12px;font-size:12px;color:var(--text-muted)}
+.noiseless .nl-setup-help{border-top:1px solid var(--background-modifier-border);padding-top:14px;color:var(--text-muted);font-size:12px;line-height:1.6}
+.noiseless .nl-setup-help>summary{cursor:pointer;font-weight:500}
+.noiseless .nl-setup-help .nl-hint{font-size:12px;margin:12px 0 0}

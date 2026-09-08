@@ -27,3 +27,10 @@ describe('personal GDP',()=>{
   it('never adds estimated duration on top of logged sessions',()=>{const a=complete(logSession(task('a'),30,graph,config,now),true,graph,config,now),b=complete(task('b'),true,graph,config,now);const p=progress([a,b],localDate(now));expect(p.loggedMinutes).toBe(30);expect(p.estimatedMinutes).toBe(180);expect(p.byGoal.life.minutes).toBeCloseTo(210*.65);expect(p.days.at(-1)?.minutes).toBe(210);});
   it('tracks effort on unfinished work without awarding points',()=>{const p=progress([logSession(task(),20,graph,config,now)]);expect(p.points).toBe(0);expect(p.byGoal.event.minutes).toBe(20);});
 });
+it('uses manual factor scores in ranking despite changed AI scores and dates',()=>{
+  const t=task();t.overrides={urgency:9.2,alignment:8,impact:7,roi:6,reputation:5};
+  expect(scores(t,graph,config,'2026-10-01')).toEqual(t.overrides);
+  t.inferred!.impact=1;t.inferred!.reputation=1;
+  expect(scores(t,graph,config,'2027-01-01')).toEqual(t.overrides);
+  t.overrides={};expect(scores(t,graph,config,'2027-01-01').impact).toBe(1);
+});

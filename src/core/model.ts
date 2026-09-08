@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { deadlineInterpretationSchema } from './deadlines';
 
 export const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(s => !Number.isNaN(Date.parse(s)) && new Date(s).toISOString().slice(0,10) === s, 'Use a real YYYY-MM-DD date');
 const score = z.number().min(1).max(10);
@@ -21,10 +22,10 @@ export const enrichmentSchema = z.object({
   impact: score, reputation: score,
   missionFit: z.array(z.object({ goalId: z.string(), score })),
   confidence: z.number().min(0).max(1), rationale: z.string().min(1),
-  complex: z.boolean()
+  complex: z.boolean(), deadlineInterpretation:deadlineInterpretationSchema.optional()
 });
 export type Enrichment = z.infer<typeof enrichmentSchema>;
-export const overridesSchema = enrichmentSchema.omit({confidence:true,rationale:true,complex:true}).partial();
+export const overridesSchema = enrichmentSchema.omit({confidence:true,rationale:true,complex:true,deadlineInterpretation:true}).partial().extend({urgency:score.optional(),alignment:score.optional(),roi:score.optional()});
 const snapshotSchema = z.object({
   at: z.string(), impact: score, alignment: score, points: z.number().min(1).max(100),
   estimateMinutes: z.number().positive(), graphVersion: z.number(), rubricVersion: z.number(),
@@ -37,6 +38,8 @@ export const taskSchema = z.object({
   schema: z.literal(1), kind: z.literal('task'), id: z.string(), title: z.string().min(1),
   originalText: z.string(), createdAt: z.string(), status: z.enum(['open','done','blocked']).default('open'),
   snoozedUntil: date.nullable().default(null),
+  deadlineReference:date.nullable().default(null),
+  deletedAt:z.string().nullable().default(null),
   inferred: enrichmentSchema.nullable().default(null), overrides: overridesSchema.default({}),
   enrichmentKey: z.string().default(''), provider: z.string().default(''),
   captureState: z.object({title:z.string(),done:z.boolean()}).nullable().default(null),
@@ -80,6 +83,8 @@ export const uid = () => crypto.randomUUID();
 export function newTask(title:string, id:string=uid(), now=new Date()):Task {
   return taskSchema.parse({schema:1,kind:'task',id,title,originalText:title,createdAt:now.toISOString()});
 }
+export function taskDeadline(task:Task){return task.overrides.due??null;}
 export function effective(task:Task):Enrichment {
-  return {...{goalId:'unsorted',estimateMinutes:30,due:addDays(localDate(new Date(task.createdAt)),7),dateKind:'inferred' as const,impact:1,reputation:1,missionFit:[],confidence:0,rationale:'Provisional values until enrichment is available.',complex:false},...task.inferred,...task.overrides};
+  const deadline=taskDeadline(task);
+  return {...{goalId:'unsorted',estimateMinutes:30,due:addDays(localDate(new Date(task.createdAt)),7),dateKind:'inferred' as const,impact:1,reputation:1,missionFit:[],confidence:0,rationale:'Provisional values until enrichment is available.',complex:false},...task.inferred,...(deadline?{due:deadline,dateKind:'explicit' as const}:{}),...task.overrides};
 }

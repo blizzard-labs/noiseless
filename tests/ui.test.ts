@@ -7,6 +7,19 @@ import { ModelRouter } from '../src/models/router';
 import { MemoryIO, config, graph, task } from './fixtures';
 import { configSchema } from '../src/core/model';
 import { paths } from '../src/storage/store';
+it('prefills Deadline and shows a date chip without saving an unchanged inferred date as an override',async()=>{
+  const {root,view,service}=setup('everything');const override=vi.spyOn(service,'override').mockResolvedValue();
+  expect(root.querySelector<HTMLInputElement>('[aria-label="Deadline"]')!.value).toBe(service.tasks[0].inferred!.due);
+  expect(root.querySelector('.nl-deadline-chip')!.textContent).toContain(service.tasks[0].inferred!.due);
+  [...root.querySelectorAll('button')].find(b=>b.textContent==='Save overrides')!.click();
+  await vi.waitFor(()=>expect(override).toHaveBeenCalledWith('task-1',{}));view.destroy();root.remove();
+});
+it('filters the goal dropdown and saves a selected manual assignment',async()=>{
+  const {root,view,service}=setup('everything');const override=vi.spyOn(service,'override').mockResolvedValue();
+  const search=root.querySelector<HTMLInputElement>('[aria-label="Search goals"]')!;search.value='Unsorted';search.dispatchEvent(new Event('input'));
+  expect(root.querySelectorAll('.nl-goal-option')).toHaveLength(1);(root.querySelector('.nl-goal-option') as HTMLButtonElement).click();
+  [...root.querySelectorAll('button')].find(b=>b.textContent==='Save overrides')!.click();await vi.waitFor(()=>expect(override).toHaveBeenCalledWith('task-1',{goalId:'unsorted'}));view.destroy();root.remove();
+});
 function setup(page:Page){const store=new Store(new MemoryIO()),router=new ModelRouter(async()=>config,()=>null,async()=>({status:500,body:{}}),new MarkdownLedger(store)),service=new Service(store,router);service.config=config;service.graph=graph;service.tasks=[task()];const root=document.createElement('div');document.body.append(root);const view=new Dashboard(root,page,service,{open:()=>{},notify:()=>{}});return {root,view,service};}
 it.each(['everything','today','progress','goals','setup'] as Page[])('renders %s without unsafe HTML and has labelled controls',page=>{const {root,view}=setup(page);expect(root.querySelector('nav[aria-label="Noiseless"]')).not.toBeNull();for(const input of root.querySelectorAll('input,textarea,select'))expect(input.hasAttribute('aria-label')||input.closest('label')).toBeTruthy();expect(root.textContent).not.toContain('undefined');view.destroy();root.remove();});
 it('renders task text as text, not injected markup',()=>{const {root,view,service}=setup('everything');service.tasks[0].title='<img src=x onerror=alert(1)>';view.render();expect(root.querySelector('img')).toBeNull();expect(root.textContent).toContain('<img');view.destroy();});
@@ -16,8 +29,8 @@ it('saves LM Studio fields from reading view without replacing other settings',a
   const {root,view,service}=setup('setup');await service.store.init();
   await service.store.mutate(paths.config,configSchema,c=>({...c,weekdayMinutes:321,providers:{...c.providers,lmstudio:{...c.providers.lmstudio,credential:'local-token'}}}));
   const before=await service.store.config();
-  root.querySelector<HTMLInputElement>('input[aria-label="Model identifier"]')!.value=' local-model ';
-  root.querySelector<HTMLInputElement>('input[aria-label="Server URL"]')!.value=' http://localhost:1234 ';
+  root.querySelector<HTMLInputElement>('[data-provider="lmstudio"] input[aria-label="Model identifier"]')!.value=' local-model ';
+  root.querySelector<HTMLInputElement>('[data-provider="lmstudio"] input[aria-label="Server URL"]')!.value=' http://localhost:1234 ';
   const button=[...root.querySelectorAll('button')].find(b=>b.textContent==='Save LM Studio connection')!;button.click();
   await vi.waitFor(()=>expect(service.config.providers.lmstudio.model).toBe('local-model'));
   expect(await service.store.config()).toEqual({...before,providers:{...before.providers,lmstudio:{...before.providers.lmstudio,enabled:true,model:'local-model',baseUrl:'http://localhost:1234/v1',tasks:{enrichment:true,goalDraft:true}}}});
@@ -36,4 +49,17 @@ it('saves cloud connection prices and task selections while preserving secrets',
   await vi.waitFor(()=>expect(service.config.providers.openai.model).toBe('cloud-model'));
   expect((await service.store.config()).providers.openai).toMatchObject({enabled:true,credential:'noiseless-openai',inputPerMillion:1.5,outputPerMillion:6,tasks:{enrichment:false,goalDraft:true}});
   view.destroy();root.remove();
+});
+
+it('shows live activity below capture without losing capture text',()=>{
+ const {root,view,service}=setup('everything');const input=root.querySelector('textarea')!;input.value='Unsaved task';input.dispatchEvent(new Event('input'));
+ service.router.report('lmstudio','running','Analyzing');expect(root.querySelector('[role="log"]')!.textContent).toContain('Analyzing');expect(input.value).toBe('Unsaved task');expect(root.querySelector('.nl-page-sidebar')!.contains(root.querySelector('[role="log"]'))).toBe(true);view.destroy();root.remove();
+});
+it('previews slider changes and saves only the edited priority factors',async()=>{
+  const {root,view,service}=setup('everything');const override=vi.spyOn(service,'override').mockResolvedValue();
+  expect(root.querySelectorAll('input[type="range"]')).toHaveLength(5);
+  const slider=root.querySelector<HTMLInputElement>('[aria-label="Urgency score"]')!;slider.value='9.2';slider.dispatchEvent(new Event('input'));
+  expect(root.querySelector('.nl-rank')!.textContent).toContain('Unsaved');expect(override).not.toHaveBeenCalled();
+  [...root.querySelectorAll('button')].find(b=>b.textContent==='Save overrides')!.click();
+  await vi.waitFor(()=>expect(override).toHaveBeenCalledWith('task-1',{urgency:9.2}));view.destroy();root.remove();
 });

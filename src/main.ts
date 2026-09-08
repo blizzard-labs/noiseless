@@ -1,3 +1,4 @@
+import { suppressNoiselessReveal, ExplorerReveal } from './ui/explorer';
 import { App, MarkdownRenderChild, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, SecretComponent, Setting, TFile, normalizePath } from 'obsidian';
 import { configSchema, localDate } from './core/model';
 import { ModelRouter } from './models/router';
@@ -62,7 +63,9 @@ export default class NoiselessPlugin extends Plugin {
     this.registerMarkdownPostProcessor((el,ctx)=>{
       if(ctx.sourcePath===paths.config)el.classList.add('nl-setup-prose');
     });
+    this.registerEvent(this.app.workspace.on('layout-change',()=>this.guardExplorerReveal()));
     this.app.workspace.onLayoutReady(()=>void action(async()=>{
+      this.guardExplorerReveal();
       this.app.workspace.iterateAllLeaves(leaf=>{if(leaf.view instanceof MarkdownView)void action(()=>this.preview(leaf.view as MarkdownView))();});
       await store.init();await this.service.refresh(true);this.ready=true;await this.remember();void this.service.enrich();
     })());
@@ -78,7 +81,21 @@ export default class NoiselessPlugin extends Plugin {
     this.registerInterval(window.setInterval(()=>{if(this.ready&&this.day!==localDate()){this.day=localDate();void this.service.refresh();}},30000));
     this.registerInterval(window.setInterval(()=>{if(this.ready)void this.service.retryPending();},600000));
   }
-  open(path:string){void this.app.workspace.openLinkText(path,'',false,{active:true,state:{mode:'preview'}});}
+  private guardedExplorers=new WeakSet<object>();
+  private guardExplorerReveal(){
+    for(const leaf of this.app.workspace.getLeavesOfType('file-explorer')){
+      const view=leaf.view as unknown as ExplorerReveal;
+      if(this.guardedExplorers.has(view)||typeof view.revealActiveFile!=='function')continue;
+      this.guardedExplorers.add(view);this.register(suppressNoiselessReveal(view,ROOT));
+    }
+  }
+  private navigation:Promise<void>=Promise.resolve();
+  private async openQuietly(path:string){
+    this.guardExplorerReveal();
+    try{await this.app.workspace.openLinkText(path,'',false,{active:true,state:{mode:'preview'}});}
+    catch(e){new Notice(`Noiseless: ${(e as Error).message}`);}
+  }
+  open(path:string){this.navigation=this.navigation.then(()=>this.openQuietly(path));}
   private async preview(view:MarkdownView){
     if(!view.file?.path.startsWith(ROOT+'/')||view.getMode()==='preview')return;
     await view.setState({...view.getState(),mode:'preview'},{history:false});

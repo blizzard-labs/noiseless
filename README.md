@@ -87,3 +87,25 @@ API references: [LM Studio structured output](https://lmstudio.ai/docs/developer
 The Goals tab starts with the same interactive graph as Goal draft. Both pages use the full pane width. Select a card and choose **Edit goal** to edit its ID, title, level, description, success criteria, target date, date kind, importance, achieved status, and parent connections with percentage weights. Invalid graphs are rejected without discarding the form. Draft edits save directly to the draft; edits from active Goals use **Save to draft**, archiving the previous draft for recovery. Continue editing the draft and approve when ready. Renaming a draft ID updates parent references within that draft; existing task assignments are not migrated by renaming goal IDs.
 
 All Noiseless tabs use the available Reading-view pane width. Above 960px, Today and Everything place the focus budget or capture box beside tasks, Setup uses paired panels, and Progress places allocation panels side by side. Narrow split panes retain a single-column layout. These width overrides apply only to rendered Noiseless pages.
+
+### Live AI activity and local response handling
+
+Everything includes an AI activity panel below Capture with live request status, local streaming progress, validated JSON results and rationale, errors, and Retry pending tasks. The in-memory log retains the last 40 events and does not show private reasoning or credentials. Structured results are displayed after validation; token progress updates during local generation. Cloud results appear when their request completes.
+
+Local failures are retained in task errors instead of being hidden by disabled cloud fallbacks. Noiseless accepts schema-valid JSON misrouted into LM Studio’s reasoning field, constrains goal IDs to approved checkpoints, and reports truncated output with corrective guidance. Low-confidence results still remain pending when no escalation is available.
+
+### Correcting task assignments
+
+In Details & scores, open **Goal**, search checkpoint titles/descriptions/success criteria, choose a result, then click **Save overrides**. Manual overrides take precedence over later model results. **View AI prompt** shows the current local analysis instructions and input (cloud scoring also includes a local draft when available). The prompt prioritizes the current task and direct project relevance over incidental admissions or career benefits. Existing frozen output credit is not rewritten by changing a goal override.
+
+**Delete task** removes a task from active lists, plans, progress totals, and capture. **Undo delete** restores the most recent deletion during the session. Canonical Markdown is retained with a `deletedAt` timestamp for recovery; reconciliation does not recreate deleted captures.
+
+### AI-interpreted task deadlines
+
+The model interprets natural-language time references and returns the exact supporting excerpt, a concise calendar explanation, and any relative day offset or weekday constraint. Noiseless validates the calendar date, source excerpt, arithmetic, weekday consistency, and manual override precedence. Relative dates use the local capture/edit date, so refresh does not move the reference date. Ambiguous interpretations remain pending for clarification or a manual Deadline. These checks verify consistency, not arbitrary natural-language meaning; review the explanation when timing matters.
+
+Task rows show Due or Planned date chips, and Details & scores prefills **Deadline** and shows the model’s interpretation. Saving other fields does not turn an unchanged inferred date into an explicit override. Existing saved results remain readable; Refresh estimates reruns them with the new prompt and validation.
+
+Deadline interpretation now runs as a separate task-only request before scoring. Goal dates are excluded from both deadline interpretation and scoring context, and scoring cannot replace the confirmed deadline. This adds one model request per analysis unless a manual deadline is present. Invalid JSON/schema results receive at most one corrective attempt with validation feedback, within existing provider budgets and routing permissions. Unsupported or contradictory answers remain pending; small local models can still fail this contract.
+
+Untimed tasks return `constraint: null` from the deadline pass. Noiseless supplies a provisional planning date seven calendar days after the capture reference date and continues goal assignment and scoring. Stated timing still requires a quoted, validated date; unknown event dates remain pending for clarification. The model no longer invents planning dates or emits redundant explicit/inferred flags.

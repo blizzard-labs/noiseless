@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { configSchema, defaultConfig, GoalGraph, graphSchema, Task, taskSchema, newTask } from '../core/model';
+import { configSchema, defaultConfig, GoalGraph, graphSchema, Task, taskSchema, newTask, localDate } from '../core/model';
 import { complete, validateGraph } from '../core/engine';
 import { captureLines, managed, patchNote, readNote, syncCapture, taskNote, writeNote } from './markdown';
 
@@ -14,8 +14,8 @@ export class Store {
   }
   async config(){return readNote(await this.io.read(paths.config),configSchema).data;}
   async graph(){const g=readNote(await this.io.read(paths.goals),graphSchema).data;validateGraph(g);return g;}
-  async taskFiles(){const files=(await this.io.list()).filter(p=>p.startsWith(`${ROOT}/Tasks/`)&&p.endsWith('.md'));const rows:{path:string;task:Task}[]=[];const ids=new Set<string>();
-    for(const path of files){let task:Task;try{task=readNote(await this.io.read(path),taskSchema).data;}catch(e){throw new Error(`${path}: ${e instanceof z.ZodError?e.issues.map(i=>`${i.path.join('.')}: ${i.message}`).join('; '):(e as Error).message}`);}if(ids.has(task.id))throw new Error(`Duplicate task ID in ${path}; give the copied task a new ID.`);ids.add(task.id);rows.push({path,task});}return rows;
+  async taskFiles(includeDeleted=false){const files=(await this.io.list()).filter(p=>p.startsWith(`${ROOT}/Tasks/`)&&p.endsWith('.md'));const rows:{path:string;task:Task}[]=[];const ids=new Set<string>();
+    for(const path of files){let task:Task;try{task=readNote(await this.io.read(path),taskSchema).data;}catch(e){throw new Error(`${path}: ${e instanceof z.ZodError?e.issues.map(i=>`${i.path.join('.')}: ${i.message}`).join('; '):(e as Error).message}`);}if(ids.has(task.id))throw new Error(`Duplicate task ID in ${path}; give the copied task a new ID.`);ids.add(task.id);if(includeDeleted||!task.deletedAt)rows.push({path,task});}return rows;
   }
   async updateTask(id:string,fn:(task:Task)=>Task){const file=(await this.taskFiles()).find(f=>f.task.id===id);if(!file)throw new Error('Task not found');let result:Task=file.task;
     await this.io.process(file.path,text=>patchNote(text,taskSchema,t=>result=taskSchema.parse(fn(t))));return result;
@@ -29,11 +29,12 @@ export class Store {
   async ingest(){
     let items:ReturnType<typeof captureLines>['items']=[];
     await this.io.process(paths.everything,text=>{const parsed=captureLines(text);items=parsed.items;return parsed.text;});
-    const existing=await this.taskFiles(),config=await this.config(),graph=await this.graph();
+    const existing=await this.taskFiles(true),config=await this.config(),graph=await this.graph();
     for(const item of items){
       const old=existing.find(r=>r.task.id===item.id);
+      if(old?.task.deletedAt)continue;
       if(!old){let t=newTask(item.title,item.id);t.captureState={title:item.title,done:item.done};if(item.done)t=complete(t,true,graph,config);await this.io.create(`${ROOT}/Tasks/${item.id}.md`,taskNote(t));}
-      else if(old.task.captureState?.title!==item.title||old.task.captureState?.done!==item.done){await this.updateTask(item.id,t=>{if(t.captureState?.title!==item.title)t={...t,title:item.title,enrichmentKey:'',pending:'Task changed'};if(t.captureState?.done!==item.done)t=complete(t,item.done,graph,config);return {...t,captureState:{title:item.title,done:item.done}};});}
+      else if(old.task.captureState?.title!==item.title||old.task.captureState?.done!==item.done){await this.updateTask(item.id,t=>{if(t.captureState?.title!==item.title)t={...t,title:item.title,deadlineReference:localDate(),enrichmentKey:'',pending:'Task changed'};if(t.captureState?.done!==item.done)t=complete(t,item.done,graph,config);return {...t,captureState:{title:item.title,done:item.done}};});}
     }
   }
   async synchronizeCapture(task:Task){await this.updateTask(task.id,t=>({...t,captureState:t.captureState?{...t.captureState,done:task.status==='done'}:null}));await this.io.process(paths.everything,text=>syncCapture(text,task));}
